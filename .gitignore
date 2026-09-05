@@ -1,0 +1,39 @@
+# Dependencias de Composer
+/vendor/
+
+# Variables de entorno y credenciales locales
+.env
+.env.bak
+.phpunit.result.cache
+
+# Archivos temporales, logs y sesiones de CodeIgniter 4
+/writable/cache/*
+!/writable/cache/index.html
+!/writable/cache/.gitkeep
+
+/writable/debugbar/*
+!/writable/debugbar/index.html
+!/writable/debugbar/.gitkeep
+
+/writable/logs/*
+!/writable/logs/index.html
+!/writable/logs/.gitkeep
+
+/writable/session/*
+!/writable/session/index.html
+!/writable/session/.gitkeep
+
+/writable/uploads/*
+!/writable/uploads/index.html
+!/writable/uploads/.gitkeep
+
+# Archivos del sistema y del editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
