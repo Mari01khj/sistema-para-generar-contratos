@@ -2,40 +2,55 @@
 
 namespace App\Controllers;
 
-use CodeIgniter\RESTful\ResourceController;
+use App\Controllers\BaseController;
 use App\Models\AreasModel;
 
-class AreasController extends ResourceController
+class AreasController extends BaseController
 {
-    protected $modelName = 'App\Models\AreasModel';
-    protected $format    = 'json';
+    protected $areaModel;
 
+    public function __construct()
+    {
+        $this->areaModel = new AreasModel();
+    }
+
+   
     public function index()
     {
-        $areas = $this->model->findAll();
-        return $this->respond($areas);
+        $areas = $this->areaModel->findAll();
+        return $this->response->setJSON($areas);
     }
-//FUNCION PARA CREAR AREAS
+
+    // METODO PARA CREAR UN NUEVO AREA
     public function create()
     {
         $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
-        if (empty($data)) {
-            return $this->fail('No hay datos.', 400);
+        if (empty($data)) 
+        {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status'  => 400,
+                'message' => 'No se recibieron datos.'
+            ]);
         }
 
-        if (!isset($data['activo'])) {
+        if (!isset($data['activo'])) 
+        {
             $data['activo'] = 1;
         }
 
-        if ($this->model->insert($data)) {
-            return $this->respondCreated([
+        if ($this->areaModel->insert($data)) 
+        {
+            return $this->response->setStatusCode(201)->setJSON([
                 'status'  => 201,
                 'message' => 'Área registrada correctamente',
-                'id'      => $this->model->getInsertID()
+                'id'      => $this->areaModel->getInsertID()
             ]);
         }
-        
-        return $this->failValidationErrors($this->model->errors());
+
+        return $this->response->setStatusCode(400)->setJSON([
+            'status' => 400,
+            'errors' => $this->areaModel->errors()
+        ]);
     }
 }

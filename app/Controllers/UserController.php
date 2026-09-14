@@ -2,41 +2,57 @@
 
 namespace App\Controllers;
 
-use CodeIgniter\RESTful\ResourceController;
+use App\Controllers\BaseController;
 use App\Models\UserModel;
 
-class UserController extends ResourceController
+class UserController extends BaseController
 {
-    protected $modelName = 'App\Models\UserModel';
-    protected $format    = 'json';
+    protected $userModel;
+
+    public function __construct()
+    {
+        $this->userModel = new UserModel();
+    }
 
     public function index()
     {
-        $users = $this->model->findAll();
-        return $this->respond($users);
+        $usuarios = $this->userModel
+                         ->select('id, rol_id, nombre, correo, activo, created_at')
+                         ->findAll();
+
+        return $this->response->setJSON($usuarios);
     }
-//FUNCION PARA CREAR USUARIOS
+
+//METODO PARA CREAR UN NUEVO USUARIO
     public function create()
     {
         $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
-        if (empty($data)) {
-            return $this->fail('No hay datos.', 400);
+        if (empty($data)) 
+        {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status'  => 400,
+                'message' => 'No se recibieron datos.'
+            ]);
         }
 
-        if (!isset($data['activo'])) {
+        if (!isset($data['activo'])) 
+        {
             $data['activo'] = 1;
         }
 
-        if ($this->model->insert($data)) {
-            return $this->respondCreated([
+        if ($this->userModel->insert($data)) 
+        {
+            return $this->response->setStatusCode(201)->setJSON([
                 'status'  => 201,
                 'message' => 'Usuario registrado correctamente',
-                'id'      => $this->model->getInsertID()
+                'id'      => $this->userModel->getInsertID()
             ]);
         }
-        
-        return $this->failValidationErrors($this->model->errors());
+
+        return $this->response->setStatusCode(400)->setJSON([
+            'status' => 400,
+            'errors' => $this->userModel->errors()
+        ]);
     }
 }
-

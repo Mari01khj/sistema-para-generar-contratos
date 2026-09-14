@@ -1,42 +1,55 @@
 <?php
 
 namespace App\Controllers;
-
-use CodeIgniter\RESTful\ResourceController;
-use App\Models\ProveedorModel;
-
-class ProveedoresController extends ResourceController
+use App\Controllers\BaseController;
+use App\Models\ProveedoresModel; 
+class ProveedoresController extends BaseController
 {
-    protected $modelName = 'App\Models\ProveedoresModel';
-    protected $format    = 'json';
+    protected $proveedorModel;
+
+    public function __construct()
+    {
+        $this->proveedorModel = new ProveedoresModel();
+    }
 
     public function index()
     {
-        $proveedores = $this->model->findAll();
-        return $this->respond($proveedores);
+        $proveedores = $this->proveedorModel->findAll();
+
+        return $this->response->setJSON($proveedores);
+        // return view('proveedores/index', ['proveedores' => $proveedores]);
     }
 
-    //FUNCION PARA CREAR PROVEEDORES
+    // METODO PARA CREAR UN NUEVO PROVEEDOR
     public function create()
     {
         $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
-        if (empty($data)) {
-            return $this->fail('No hay datos.', 400);
-        }
-
-        if (!isset($data['activo'])) {
-            $data['activo'] = 1;
-        }
-
-        if ($this->model->insert($data)) {
-            return $this->respondCreated([
-                'status'  => 201,
-                'message' => 'Proveedor registrado correctamente',
-                'id'      => $this->model->getInsertID()
+        if (empty($data)) 
+            {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status'  => 400,
+                'message' => 'No se enviaron datos.'
             ]);
         }
 
-        return $this->failValidationErrors($this->model->errors());
+        if (!isset($data['activo'])) 
+        {
+            $data['activo'] = 1;
+        }
+
+        if ($this->proveedorModel->insert($data)) 
+        {
+            return $this->response->setStatusCode(201)->setJSON([
+                'status'  => 201,
+                'message' => 'Proveedor registrado correctamente',
+                'id'      => $this->proveedorModel->getInsertID()
+            ]);
+        }
+
+        return $this->response->setStatusCode(400)->setJSON([
+            'status' => 400,
+            'errors' => $this->proveedorModel->errors()
+        ]);
     }
 }
