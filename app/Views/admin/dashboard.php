@@ -2,15 +2,12 @@
 
 <?= $this->section('content') ?>
 
-<!-- Page Heading -->
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Panel de Control</h1>
+    <h1 class="h3 mb-0 text-gray-800">Panel de Control - Administrador</h1>
 </div>
 
-<!-- Content Row -->
 <div class="row">
-
-    <!-- Card: Contratos Activos -->
+    <!-- Tarjeta Contratos -->
     <div class="col-xl-3 col-md-6 mb-4">
         <div class="card border-left-primary shadow h-100 py-2">
             <div class="card-body">
@@ -20,14 +17,14 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">12</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                        <i class="fas fa-file-contract fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Card: Proveedores / Clientes -->
+    <!-- Tarjeta Proveedores -->
     <div class="col-xl-3 col-md-6 mb-4">
         <div class="card border-left-success shadow h-100 py-2">
             <div class="card-body">
@@ -43,7 +40,6 @@
             </div>
         </div>
     </div>
-
 </div>
 
 <?= $this->endSection() ?>
