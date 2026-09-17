@@ -5,6 +5,40 @@ use CodeIgniter\Router\RouteCollection;
 /** @var RouteCollection $routes */
 
 $routes->get('/', 'Home::index');
+//=================================
+//RUTAS PARA EL LOGIN
+//=================================
+
+$routes->get('/',      'AuthController::login');
+$routes->get('login',  'AuthController::login');
+$routes->post('login', 'AuthController::authenticate');
+$routes->get('logout', 'AuthController::logout');
+
+//ADMIN
+$routes->group('admin', ['filter' => 'role:1'], function($routes) 
+{
+    $routes->get('dashboard',      'AdminController::dashboard');
+    $routes->get('proveedores',    'ProveedoresController::index');
+    $routes->get('areas',          'AreasController::index');
+    $routes->get('tipos-contrato', 'TiposContratoController::index');
+    $routes->get('usuarios',       'UserController::index');
+});
+
+// OPERADOR
+$routes->group('operador', ['filter' => 'role:2'], function($routes) 
+{
+    $routes->get('dashboard', 'Operador::dashboard');
+    $routes->get('perfil',    'Operador::perfil');
+});
+
+
+$routes->group('contratos', ['filter' => 'role:1,2'], function($routes) 
+{
+    $routes->get('/',           'Contratos::index');
+    $routes->get('nuevo',       'Contratos::crear');
+    $routes->post('guardar',    'Contratos::guardar');
+});
+
 
 //================================
 //RUTAS PARA LAS AREAS

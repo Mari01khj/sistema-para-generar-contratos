@@ -57,4 +57,10 @@ class UserModel extends Model
         }
         return $data;
     }
+    public function getByEmail(string $correo): ?array
+    {
+        return $this->where('correo', $correo)
+                      ->where('activo', 1)
+                      ->first();
+    }
 }

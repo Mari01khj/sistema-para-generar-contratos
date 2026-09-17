@@ -6,17 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title><?= $titulo ?? 'Sistema de Contratos' ?></title>
 
-    <!-- Iconos FontAwesome (desde vendor o CDN de respaldo) -->
+    <!-- Iconos -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" type="text/css">
     <link href="https://fonts.googleapis.com/css?family=Nunito:200,300,400,600,700,800,900" rel="stylesheet">
 
-    <!-- CSS de SB Admin 2 (tus archivos reales) -->
+    <!-- CSS de SB Admin 2 -->
     <link href="<?= base_url('css/sb-admin-2.min.css') ?>" rel="stylesheet">
 </head>
 
 <body id="page-top">
 
-    <!-- Page Wrapper -->
     <div id="wrapper">
 
         <!-- Sidebar -->
@@ -31,13 +30,13 @@
 
                 <!-- Topbar -->
                 <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-                    <!-- Sidebar Toggle (Topbar) -->
+                    <!-- Sidebar Toggle -->
                     <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
                         <i class="fa fa-bars"></i>
                     </button>
 
                     <span class="d-none d-sm-inline-block text-gray-600 small">
-                        H. Ayuntamiento Constitucional &bull; Dirección de Recursos Materiales
+                    &bull; Dirección de Recursos Materiales
                     </span>
 
                     <!-- Topbar Navbar -->
@@ -48,7 +47,7 @@
                         <li class="nav-item dropdown no-arrow">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <span class="mr-2 d-none d-lg-inline text-gray-600 small">
-                                    <?= ($rol_id ?? 1) == 1 ? 'Administrador' : 'Operador' ?>
+                                    <?= session()->get('nombre') ?? 'Usuario' ?>
                                 </span>
                                 <i class="fas fa-user-circle fa-2x text-gray-400"></i>
                             </a>
@@ -96,12 +95,12 @@
         <i class="fas fa-angle-up"></i>
     </a>
 
-    <!-- Scripts: jQuery y Bootstrap Bundle (usamos CDNs confiables para que no dependa de si vendor está completo) -->
+    <!-- Scripts: jQuery y Bootstrap Bundle -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
 
-    <!-- JS de SB Admin 2 (tu archivo) -->
+    <!-- JS de SB Admin 2 -->
     <script src="<?= base_url('js/sb-admin-2.min.js') ?>"></script>
 
     <?= $this->renderSection('scripts') ?>
