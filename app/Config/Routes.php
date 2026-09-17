@@ -68,3 +68,4 @@ $routes->group('bienes', static function ($routes)
     $routes->post('crear', 'BienesController::create');
 });
 
+$routes->get('/', 'Home::index');

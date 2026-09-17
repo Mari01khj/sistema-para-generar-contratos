@@ -1,12 +1,21 @@
+<<<<<<< HEAD
 # Dependencias de Composer
 /vendor/
 
 # Variables de entorno y credenciales locales
+=======
+
+/vendor/
+
+>>>>>>> fb41a2c402a7faa894786b6fb036bd30672c1dff
 .env
 .env.bak
 .phpunit.result.cache
 
+<<<<<<< HEAD
 # Archivos temporales, logs y sesiones de CodeIgniter 4
+=======
+>>>>>>> fb41a2c402a7faa894786b6fb036bd30672c1dff
 /writable/cache/*
 !/writable/cache/index.html
 !/writable/cache/.gitkeep
@@ -27,7 +36,11 @@
 !/writable/uploads/index.html
 !/writable/uploads/.gitkeep
 
+<<<<<<< HEAD
 # Archivos del sistema y del editor
+=======
+
+>>>>>>> fb41a2c402a7faa894786b6fb036bd30672c1dff
 .DS_Store
 Thumbs.db
 .idea/
