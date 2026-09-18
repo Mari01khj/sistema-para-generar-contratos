@@ -33,7 +33,7 @@
                             <?= csrf_field() ?>
                             <div class="form-group">
                                 <input type="email" name="correo" class="form-control form-control-user" 
-                                       placeholder="Correo electrónico institucional" 
+                                       placeholder="Correo electrónico" 
                                        value="<?= old('correo') ?>" required>
                             </div>
                             <div class="form-group">

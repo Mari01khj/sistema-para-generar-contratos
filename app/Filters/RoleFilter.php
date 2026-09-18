@@ -14,12 +14,14 @@ class RoleFilter implements FilterInterface
         $session = session();
 
         // sesion iniciada
-        if (! $session->get('isLoggedIn')) {
+        if (! $session->get('isLoggedIn')) 
+        {
             return redirect()->to(base_url('login'))->with('error', 'Debes iniciar sesión para acceder.');
         }
 
         // ver roles
-        if (! empty($arguments)) {
+        if (! empty($arguments)) 
+        {
             $rolUsuario = (string) $session->get('rol_id');
 
             if (! in_array($rolUsuario, $arguments, true)) 

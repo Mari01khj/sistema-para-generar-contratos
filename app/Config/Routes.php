@@ -15,7 +15,7 @@ $routes->post('login', 'AuthController::authenticate');
 $routes->get('logout', 'AuthController::logout');
 
 //ADMIN
-$routes->group('admin', ['filter' => 'role:1'], function($routes) 
+$routes->group('admin', ['filter' => 'roleFilter:1'], function($routes) 
 {
     $routes->get('dashboard',      'AdminController::dashboard');
     $routes->get('proveedores',    'ProveedoresController::index');
@@ -25,10 +25,10 @@ $routes->group('admin', ['filter' => 'role:1'], function($routes)
 });
 
 // OPERADOR
-$routes->group('operador', ['filter' => 'role:2'], function($routes) 
+$routes->group('operador', ['filter' => 'roleFilter:2'], function($routes) 
 {
-    $routes->get('dashboard', 'Operador::dashboard');
-    $routes->get('perfil',    'Operador::perfil');
+    $routes->get('dashboard', 'OperadorController::dashboardOperador');
+    $routes->get('perfil',    'OperadorController::perfil');
 });
 
 

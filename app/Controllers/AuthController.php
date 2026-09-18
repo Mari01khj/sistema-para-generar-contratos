@@ -1,9 +1,9 @@
 <?php
 
 namespace App\Controllers;
-
 use App\Controllers\BaseController;
 use CodeIgniter\HTTP\ResponseInterface;
+use App\Models\UserModel;
 
 class AuthController extends BaseController
 {
@@ -21,11 +21,11 @@ class AuthController extends BaseController
 
     public function authenticate()
     {
-        $usuarioModel = new UsuarioModel();
+        $userModel = new UserModel();
         $correo   = $this->request->getPost('correo');
         $password = (string)$this->request->getPost('password');
 
-        $usuario = $usuarioModel->obtenerPorCorreo($correo);
+        $usuario = $userModel->obtenerPorCorreo($correo);
 
         if ($usuario && password_verify($password, $usuario['password_hash'])) {
           

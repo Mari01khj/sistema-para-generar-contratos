@@ -7,12 +7,12 @@ use CodeIgniter\HTTP\ResponseInterface;
 
 class OperadorController extends BaseController
 {
-    public function dashboard()
+    public function dashboardOperador()
     {
         $data = [
             'titulo' => 'Panel de Control - Operador',
             'rol_id' => session()->get('rol_id')
         ];
-        return view('operador/dasboardOperador', $data);
+        return view('operador/dashboardOperador', $data);
     }
 }
