@@ -1,8 +1,7 @@
 <?php
 
 namespace App\Controllers;
-use App\Controllers\BaseController;
-use CodeIgniter\HTTP\ResponseInterface;
+
 use App\Models\UserModel;
 
 class AuthController extends BaseController
@@ -11,9 +10,9 @@ class AuthController extends BaseController
     {
         if (session()->get('isLoggedIn')) 
         {
-            return (session()->get('rol_id') == 1) 
-                ? redirect()->to(base_url('admin/dashboard')) 
-                : redirect()->to(base_url('operador/dashboardOperador'));
+            helper('sesion');
+
+            return redirect()->to(ruta_dashboard());
         }
 
         return view('auth/login');
@@ -22,30 +21,26 @@ class AuthController extends BaseController
     public function authenticate()
     {
         $userModel = new UserModel();
-        $correo   = $this->request->getPost('correo');
-        $password = (string)$this->request->getPost('password');
+        $correo    = (string) $this->request->getPost('correo');
+        $password  = (string) $this->request->getPost('password');
 
         $usuario = $userModel->obtenerPorCorreo($correo);
 
         if ($usuario && password_verify($password, $usuario['password_hash'])) {
-          
-            $sessionData = [
-                'usuario_id'  => $usuario['id'],
-                'nombre'      => $usuario['nombre'],
-                'correo'      => $usuario['correo'],
-                'rol_id'      => (int)$usuario['rol_id'],
-                'isLoggedIn'  => true,
-            ];
-            session()->set($sessionData);
+            //id de sesion
+            session()->regenerate();
 
-            if ($usuario['rol_id'] == 1) 
-            {
-                return redirect()->to(base_url('admin/dashboard'));
-            } 
-            else 
-            {
-                return redirect()->to(base_url('operador/dashboardOperador'));
-            }
+            session()->set([
+                'usuario_id' => $usuario['id'],
+                'nombre'     => $usuario['nombre'],
+                'correo'     => $usuario['correo'],
+                'rol_id'     => (int) $usuario['rol_id'],
+                'isLoggedIn' => true,
+            ]);
+
+            helper('sesion');
+
+            return redirect()->to(ruta_dashboard((int) $usuario['rol_id']));
         }
 
         return redirect()->back()->withInput()->with('error', 'Credenciales incorrectas o usuario inactivo.');
@@ -54,6 +49,7 @@ class AuthController extends BaseController
     public function logout()
     {
         session()->destroy();
-        return redirect()->to(base_url('login'));
+
+        return redirect()->to(route_to('loginForm'));
     }
 }

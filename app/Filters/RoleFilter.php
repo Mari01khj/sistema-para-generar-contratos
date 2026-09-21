@@ -6,39 +6,33 @@ use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 
+/**
+ * Restringe una ruta a ciertos roles.
+ */
 class RoleFilter implements FilterInterface
 {
-    
     public function before(RequestInterface $request, $arguments = null)
     {
-        $session = session();
-
-        // sesion iniciada
-        if (! $session->get('isLoggedIn')) 
+       
+        if (! session()->get('isLoggedIn')) 
         {
-            return redirect()->to(base_url('login'))->with('error', 'Debes iniciar sesión para acceder.');
+            return redirect()->to(route_to('loginForm'))
+                ->with('error', 'Debe iniciar sesión para tener acceso.');
         }
 
-        // ver roles
-        if (! empty($arguments)) 
-        {
-            $rolUsuario = (string) $session->get('rol_id');
+        $rolUsuario    = (int) session()->get('rol_id');
+        $rolesPermitidos = array_map('intval', (array) $arguments);
 
-            if (! in_array($rolUsuario, $arguments, true)) 
-                {
-                
-                if ($rolUsuario === '2') 
-                {
-                    return redirect()->to(base_url('operador/dashboardOperador'))->with('error', 'No tienes permisos para acceder a esta sección.');
-                }
+        if (! in_array($rolUsuario, $rolesPermitidos, true)) {
+            // login que no tiene permisos para acceder a la ruta solicitada
+            helper('sesion');
 
-                return redirect()->to(base_url('login'))->with('error', 'Acceso no autorizado.');
-            }
+            return redirect()->to(ruta_dashboard($rolUsuario))
+                ->with('error', 'No tiene permisos para acceder a esa sección.');
         }
     }
 
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
     {
-        // No se requiere acción posterior
     }
 }
