@@ -2,8 +2,8 @@
 
 namespace App\Controllers;
 
-use App\Controllers\BaseController;
-use App\Models\TipoContrato; 
+use App\Models\CamposFormularioModel;
+use App\Models\TipoContrato;
 
 class TipoContratoController extends BaseController
 {
@@ -12,6 +12,28 @@ class TipoContratoController extends BaseController
     public function __construct()
     {
         $this->tipoContratoModel = new TipoContrato();
+    }
+
+    /**
+     * Pantalla: lista de tipos de contrato + formulario para crear uno.
+     * Desde aquí el admin entra a "Gestionar campos" de cada tipo.
+     */
+    public function gestion()
+    {
+        $campoModel = new CamposFormularioModel();
+        $tipos      = $this->tipoContratoModel->orderBy('id', 'DESC')->findAll();
+
+        // Para mostrar "3 campos" junto a cada tipo, sin una consulta por fila.
+        $conteoCampos = [];
+        foreach ($campoModel->where('activo', 1)->findAll() as $campo) {
+            $tid = $campo['tipo_contrato_id'];
+            $conteoCampos[$tid] = ($conteoCampos[$tid] ?? 0) + 1;
+        }
+
+        return view('catalogos/tiposContratosView', [
+            'tipos'        => $tipos,
+            'conteoCampos' => $conteoCampos,
+        ]);
     }
 
     public function index()
@@ -32,43 +54,31 @@ class TipoContratoController extends BaseController
 
         $archivo = $this->request->getFile('plantilla');
 
-        if ($archivo && $archivo->isValid() && !$archivo->hasMoved()) {
-            $extension = strtolower($archivo->getClientExtension());
+        if ($archivo && $archivo->isValid() && ! $archivo->hasMoved()) {
+            $extension  = strtolower($archivo->getClientExtension());
             $permitidas = ['docx', 'doc', 'xlsx', 'xls'];
 
-            if (!in_array($extension, $permitidas)) {
-                return $this->response->setStatusCode(400)->setJSON([
-                    'status'  => 400,
-                    'message' => 'Formato no permitido. Solo se aceptan archivos Word (.docx) o Excel (.xlsx).'
-                ]);
+            if (! in_array($extension, $permitidas, true)) {
+                return redirect()->back()->withInput()
+                    ->with('error', 'Formato no permitido. Solo se aceptan archivos Word (.docx) o Excel (.xlsx).');
             }
 
             $nuevoNombre = uniqid('plantilla_', true) . '.' . $extension;
             $archivo->move(WRITEPATH . 'uploads/plantillas', $nuevoNombre);
 
             $data['plantilla'] = 'uploads/plantillas/' . $nuevoNombre;
-        } 
-        else 
-        {
-            return $this->response->setStatusCode(400)->setJSON([
-                'status'  => 400,
-                'message' => 'Es obligatorio adjuntar un archivo de plantilla válido.'
-            ]);
+        } else {
+            return redirect()->back()->withInput()
+                ->with('error', 'Es obligatorio adjuntar un archivo de plantilla válido.');
         }
 
-        if ($this->tipoContratoModel->insert($data)) 
-        {
-            return $this->response->setStatusCode(201)->setJSON([
-                'status'  => 201,
-                'message' => 'Tipo de contrato registrado exitosamente',
-                'id'      => $this->tipoContratoModel->getInsertID(),
-                'archivo' => $data['plantilla']
-            ]);
+        if (! $this->tipoContratoModel->insert($data)) {
+            return redirect()->back()->withInput()
+                ->with('error', 'No se pudo registrar el tipo de contrato.')
+                ->with('errores_validacion', $this->tipoContratoModel->errors());
         }
 
-        return $this->response->setStatusCode(400)->setJSON([
-            'status' => 400,
-            'errors' => $this->tipoContratoModel->errors()
-        ]);
+        return redirect()->to(route_to('tiposContratoGestion'))
+            ->with('mensaje', 'Tipo de contrato "' . $data['nombre'] . '" registrado correctamente.');
     }
 }
