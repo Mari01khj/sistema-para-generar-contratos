@@ -59,8 +59,6 @@ class CamposFormularioModel extends Model
     protected $validationRules = [
         'tipo_contrato_id' => 'required|is_natural_no_zero',
         'etiqueta'         => 'required|max_length[150]|min_length[2]',
-        // Sin espacios ni acentos: es el nombre que se va a escribir
-        // dentro del machote de Word como marcador, ej. ${fecha_entrega}
         'nombre_campo'     => 'required|max_length[100]|regex_match[/^[a-z][a-z0-9_]*$/]',
         'tipo_dato'        => 'required|in_list[texto,texto_largo,numero,fecha,lista]',
         'origen_lista'     => 'permit_empty|in_list[proveedores,areas]',
@@ -68,7 +66,8 @@ class CamposFormularioModel extends Model
         'orden'            => 'permit_empty|is_natural',
     ];
 
-    protected $validationMessages = [
+    protected $validationMessages = 
+    [
         'nombre_campo' => [
             'regex_match' => 'El nombre técnico solo puede tener minúsculas, números y guion bajo, y debe empezar con una letra (ej. fecha_entrega).',
         ],
