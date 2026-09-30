@@ -91,8 +91,7 @@
                         <label>Plantilla del machote (.docx)</label>
                         <input type="file" name="plantilla" class="form-control-file" accept=".docx,.doc,.xlsx,.xls" required>
                         <small class="form-text text-muted">
-                            Este archivo es donde vas a escribir los marcadores (ej. <code>${fecha_entrega}</code>)
-                            que el sistema va a rellenar. Eso lo vemos en el paso siguiente.
+                            Este archivo es  el que el sistema va a rellenar. 
                         </small>
                     </div>
                 </div>
