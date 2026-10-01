@@ -63,15 +63,12 @@
                 <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
 
                     <!-- Sidebar Toggle -->
-
                     <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
 
                         <i class="fa fa-bars"></i>
 
                     </button>
-
-
-
+                    
                     <span class="d-none d-sm-inline-block text-gray-600 small">
 
                     &bull; Dirección de Recursos Materiales
@@ -128,12 +125,6 @@
 
                 </nav>
 
-                <!-- End of Topbar -->
-
-
-
-                <!-- Begin Page Content -->
-
                 <div class="container-fluid">
 
                     <?php if (session()->getFlashdata('error')): ?>
@@ -151,18 +142,7 @@
                     <?= $this->renderSection('content') ?>
 
                 </div>
-
-                <!-- /.container-fluid -->
-
-
-
             </div>
-
-            <!-- End of Main Content -->
-
-
-
-            <!-- Footer -->
 
             <footer class="sticky-footer bg-white">
 
@@ -188,20 +168,14 @@
 
     </a>
     <!-- Scripts: jQuery y Bootstrap -->
-
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
-
     <script src="<?= base_url('vendor/datatables/jquery.dataTables.min.js') ?>"></script>
     <script src="<?= base_url('vendor/datatables/dataTables.bootstrap4.min.js') ?>"></script>
 
     <!-- JS de SB Admin 2 -->
-
     <script src="<?= base_url('js/sb-admin-2.min.js') ?>"></script>
-
 
 
     <?= $this->renderSection('scripts') ?>

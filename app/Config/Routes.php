@@ -56,8 +56,8 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
     $routes->group('', ['filter' => 'roleFilter:2'], static function ($routes) 
     {
         $routes->get('operador/dashboardOperador', 'OperadorController::dashboardOperador');
-        $routes->get('mis-datos', 'OperadorController::misDatos');
-        $routes->post('actualizar-datos', 'OperadorController::actualizarDatos');
+        $routes->get('perfil', 'OperadorController::misDatos');
+        $routes->post('operador/actualizar-datos', 'OperadorController::actualizarDatos');
     });
     
     $routes->group('contratos', ['filter' => 'roleFilter:1,2'], static function ($routes) 
