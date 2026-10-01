@@ -48,7 +48,7 @@
                 </table>
             </div>
             <p class="text-muted small mb-0 mt-2">
-                Ver detalle, editar y eliminar contratos se agregan en el siguiente paso.
+                
             </p>
         <?php endif; ?>
     </div>

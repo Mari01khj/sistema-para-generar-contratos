@@ -14,18 +14,15 @@ class TipoContratoController extends BaseController
         $this->tipoContratoModel = new TipoContrato();
     }
 
-    /**
-     * Pantalla: lista de tipos de contrato + formulario para crear uno.
-     * Desde aquí el admin entra a "Gestionar campos" de cada tipo.
-     */
+    
     public function gestion()
     {
         $campoModel = new CamposFormularioModel();
         $tipos      = $this->tipoContratoModel->orderBy('id', 'DESC')->findAll();
 
-        // Para mostrar "3 campos" junto a cada tipo, sin una consulta por fila.
         $conteoCampos = [];
-        foreach ($campoModel->where('activo', 1)->findAll() as $campo) {
+        foreach ($campoModel->where('activo', 1)->findAll() as $campo) 
+        {
             $tid = $campo['tipo_contrato_id'];
             $conteoCampos[$tid] = ($conteoCampos[$tid] ?? 0) + 1;
         }

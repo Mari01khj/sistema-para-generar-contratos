@@ -44,6 +44,7 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
         $routes->group('areas', static function ($routes) {
             $routes->get('/', 'AreasController::index');
             $routes->post('crear', 'AreasController::create');
+            $routes->get('list', 'AreasController::listar');
         });
 
         $routes->group('usuarios', static function ($routes) {
@@ -52,8 +53,11 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
         });
     });
 
-    $routes->group('', ['filter' => 'roleFilter:2'], static function ($routes) {
+    $routes->group('', ['filter' => 'roleFilter:2'], static function ($routes) 
+    {
         $routes->get('operador/dashboardOperador', 'OperadorController::dashboardOperador');
+        $routes->get('mis-datos', 'OperadorController::misDatos');
+        $routes->post('actualizar-datos', 'OperadorController::actualizarDatos');
     });
     
     $routes->group('contratos', ['filter' => 'roleFilter:1,2'], static function ($routes) 

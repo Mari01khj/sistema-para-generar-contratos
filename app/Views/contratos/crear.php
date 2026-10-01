@@ -23,9 +23,7 @@
     </div>
 <?php endif; ?>
 
-<!-- Paso 1: elegir el tipo de contrato. Un GET normal: al cambiar el
-     select, la página se recarga con ?tipo_contrato_id=X en la URL.
-     Así puedes refrescar o compartir el enlace sin perder el tipo elegido. -->
+<!-- Paso 1: elegir el tipo de contrato. -->
 <div class="card shadow mb-4">
     <div class="card-body">
         <form method="GET" action="<?= site_url('contratos/nuevo') ?>">

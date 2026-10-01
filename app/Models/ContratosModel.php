@@ -40,13 +40,7 @@ class ContratosModel extends Model
     protected $updatedField  = '';
     protected $deletedField  = '';
 
-    /**
-     * "folio" no está aquí a propósito: lo genera el sistema después de
-     * insertar (ver ContratosController::create), nunca lo escribe el
-     * operador. "usuario_id" tampoco: lo pone el controlador a partir de
-     * la sesión, no del formulario (para que nadie pueda crear un
-     * contrato a nombre de otro usuario).
-     */
+    
     protected $validationRules      = [
         'tipo_contrato_id'     => 'required|is_natural_no_zero',
         'proveedor_id'         => 'required|is_natural_no_zero',
@@ -72,10 +66,7 @@ class ContratosModel extends Model
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
 
-    /**
-     * Lista de contratos para la pantalla principal, con el nombre del
-     * tipo, proveedor y área ya resueltos (evita N+1 consultas en la vista).
-     */
+    
     public function listaConDetalle(): array
     {
         return $this->select('contratos.*, tipos_contrato.nombre as tipo_nombre, proveedores.razon_social, areas.nombre_area')

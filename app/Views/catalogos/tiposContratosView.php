@@ -73,7 +73,7 @@
     </div>
 </div>
 
-<!-- Modal: nuevo tipo de contrato -->
+<!--nuevo tipo de contrato -->
 <div class="modal fade" id="modalNuevoTipo" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <form action="<?= site_url('tipos-contrato/crear') ?>" method="POST" enctype="multipart/form-data">
