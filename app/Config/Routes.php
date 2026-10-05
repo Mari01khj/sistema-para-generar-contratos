@@ -39,6 +39,7 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
         $routes->group('proveedores', static function ($routes) {
             $routes->get('/', 'ProveedoresController::index');
             $routes->post('crear', 'ProveedoresController::create');
+            $routes->get('list', 'ProveedoresController::listar');
         });
 
         $routes->group('areas', static function ($routes) {

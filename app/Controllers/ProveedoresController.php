@@ -14,19 +14,23 @@ class ProveedoresController extends BaseController
 
     public function index()
     {
+          return view('catalogos/ProveedoresView', [
+            'titulo' => 'Catálogo de Proveedores'
+        ]);
+    }
+    public function listar()
+    {
         $proveedores = $this->proveedorModel->findAll();
-
         return $this->response->setJSON($proveedores);
-        // return view('proveedores/index', ['proveedores' => $proveedores]);
     }
 
     // METODO PARA CREAR UN NUEVO PROVEEDOR
     public function create()
     {
-        $data = $this->request->getJSON(true) ?? $this->request->getPost();
-
+        $data = $this->request->getJSON(true);
+        
         if (empty($data)) 
-            {
+        {
             return $this->response->setStatusCode(400)->setJSON([
                 'status'  => 400,
                 'message' => 'No se enviaron datos.'
