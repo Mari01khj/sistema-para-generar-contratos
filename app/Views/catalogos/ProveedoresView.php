@@ -20,6 +20,9 @@
                         <th>Representante</th>
                         <th>RFC</th>
                         <th>Actividad Económica</th>
+                        <th>Domicilio</th>
+                        <th>Teléfono</th>
+                        <th>Correo</th>
                         <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
@@ -45,19 +48,32 @@
                 <form id="formProveedor">
                     <div class="form-group">
                         <label>Nombre del Proveedor</label>
-                        <input type="text" class="form-control" id="nombre_proveedor" required>
+                        <input type="text" class="form-control" id="razon_social" required>
                     </div>
                     <div class="form-group">
                         <label>RFC</label>
                         <input type="text" class="form-control" id="rfc" required>
                     </div>
                     <div class="form-group">
+                        <label>Representante Legal</label>
+                        <input type="text" class="form-control" id="representante_legal" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Domicilio Fiscal</label>
+                        <input type="text" class="form-control" id="domicilio_fiscal" required>
+                    </div>
+                    <div class="form-group">
                         <label>Actividad Económica</label>
                         <input type="text" class="form-control" id="actividad_economica" required>
                     </div>
                     <div class="form-group">
-                        <label>Representante Legal</label>
-                        <input type="text" class="form-control" id="representante_legal" required>
+                        <label>Correo Electrónico</label>
+                        <!-- CORREGIDO: id="correo" para que coincida con el script -->
+                        <input type="email" class="form-control" id="correo" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Teléfono</label>
+                        <input type="text" class="form-control" id="telefono" required>
                     </div>
                 </form>
                 <div id="alertaError" class="alert alert-danger d-none mt-3"></div>
@@ -79,19 +95,14 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-function cargarProveedores() 
-{
-    fetch('<?= base_url('proveedores/list') ?>', 
-    {
+function cargarProveedores() {
+    fetch('<?= base_url('proveedores/list') ?>', {
         headers: { 'Accept': 'application/json' }
     })
     .then(response => response.json())
     .then(data => {
-       
+        // Limpiar tabla si ya es un datatable
         if ($.fn.DataTable && $.fn.DataTable.isDataTable('#tablaProveedores')) {
-            $('#tablaProveedores').DataTable().clear().destroy();
-        }
-        {
             $('#tablaProveedores').DataTable().clear().destroy();
         }
         
@@ -103,13 +114,17 @@ function cargarProveedores()
                 ? '<span class="badge badge-success">Activo</span>' 
                 : '<span class="badge badge-danger">Inactivo</span>';
                 
+            // CORREGIDO: Orden idéntico al <thead> y etiquetas </td> bien cerradas
             tbody.innerHTML += `
                 <tr>
                     <td>${proveedor.id}</td>
                     <td>${proveedor.razon_social}</td>
                     <td>${proveedor.representante_legal}</td>
-                    <td>${proveedor.actividad_economica}</td>
                     <td>${proveedor.rfc}</td>
+                    <td>${proveedor.actividad_economica}</td>
+                    <td>${proveedor.domicilio_fiscal}</td>
+                    <td>${proveedor.telefono}</td>
+                    <td>${proveedor.correo}</td>
                     <td>${estado}</td>
                     <td>
                         <button class="btn btn-primary btn-sm"><i class="fas fa-edit"></i></button>
@@ -119,7 +134,7 @@ function cargarProveedores()
             `;
         });
 
-        // Inicializar DataTable 
+        // Inicializar DataTable
         setTimeout(() => {
             if ($.fn.DataTable) {
                 $('#tablaProveedores').DataTable({
@@ -127,8 +142,6 @@ function cargarProveedores()
                         "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
                     }
                 });
-            } else {
-                console.error("DataTables no está cargado.");
             }
         }, 100);
     })
@@ -138,10 +151,16 @@ function cargarProveedores()
 function guardarProveedor() {
     const datosProveedor = {
         razon_social: document.getElementById('razon_social').value,
+        rfc: document.getElementById('rfc').value,
         representante_legal: document.getElementById('representante_legal').value,
+        domicilio_fiscal: document.getElementById('domicilio_fiscal').value,
         actividad_economica: document.getElementById('actividad_economica').value,
-        rfc: document.getElementById('rfc').value
+        correo: document.getElementById('correo').value,
+        telefono: document.getElementById('telefono').value
     };
+
+    let btnGuardar = document.getElementById('btnGuardar');
+    btnGuardar.disabled = true;
 
     fetch('<?= base_url('proveedores/crear') ?>', {
         method: 'POST',
@@ -166,7 +185,10 @@ function guardarProveedor() {
             divError.classList.remove('d-none');
         }
     })
-    .catch(error => console.error('Error en fetch:', error));
+    .catch(error => console.error('Error en fetch:', error))
+    .finally(() => {
+        btnGuardar.disabled = false;
+    });
 }
 </script>
 <?= $this->endSection() ?>

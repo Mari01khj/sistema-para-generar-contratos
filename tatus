@@ -1,0 +1,12 @@
+* [33m8b241e9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m más tablas
+* [33m4bce1af[m tabla de datos de usuario
+* [33md08fefe[m tabla de areas
+* [33m8938275[m modulo de nuevo contrato
+* [33me36aad9[m migraciones
+* [33mb086b80[m correcciones
+[31m|[m * [33m6efbaab[m[33m ([m[1;35mrefs/stash[m[33m)[m WIP on main: a80d78f filtro funcional y adecuacion en las sesiones
+[31m|[m[31m/[m[33m|[m 
+[31m|[m * [33me002f61[m index on main: a80d78f filtro funcional y adecuacion en las sesiones
+[31m|[m[31m/[m  
+* [33ma80d78f[m filtro funcional y adecuacion en las sesiones
+* [33m3de1d18[m rutas con filtro

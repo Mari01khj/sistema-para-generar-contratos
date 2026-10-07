@@ -16,12 +16,17 @@ class UserController extends BaseController
 
     public function index()
     {
-        $usuarios = $this->userModel
-                         ->select('id, rol_id, nombre, correo, activo, created_at')
-                         ->findAll();
+        return view('catalogos/UsuariosView', [
+            'titulo' => 'Catálogo de Usuarios'
+        ]);
+    }
 
+    public function listar()
+    {
+        $usuarios = $this->userModel->findAll();
         return $this->response->setJSON($usuarios);
     }
+
 
 //METODO PARA CREAR UN NUEVO USUARIO
     public function create()

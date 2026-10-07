@@ -51,6 +51,7 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
         $routes->group('usuarios', static function ($routes) {
             $routes->get('/', 'UserController::index');
             $routes->post('crear', 'UserController::create');
+            $routes->get('list', 'UserController::listar');
         });
     });
 

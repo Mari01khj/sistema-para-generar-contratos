@@ -17,7 +17,8 @@ class ProveedoresModel extends Model
         'rfc',
         'representante_legal',
         'domicilio_fiscal',
-        'direccion',
+        'actividad_economica',
+        'correo',
         'telefono',
         'activo'
     ];
