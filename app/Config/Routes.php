@@ -30,28 +30,39 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
             $routes->post('(:num)/campos/crear', 'CamposFormularioController::create/$1');
         });
 
-        $routes->group('campos', static function ($routes) {
+        $routes->group('campos', static function ($routes) 
+        {
             $routes->post('(:num)/editar', 'CamposFormularioController::update/$1');
             $routes->post('(:num)/eliminar', 'CamposFormularioController::delete/$1');
             $routes->post('(:num)/activar', 'CamposFormularioController::activar/$1');
         });
 
-        $routes->group('proveedores', static function ($routes) {
+        $routes->group('proveedores', static function ($routes) 
+        {
             $routes->get('/', 'ProveedoresController::index');
             $routes->post('crear', 'ProveedoresController::create');
             $routes->get('list', 'ProveedoresController::listar');
+            $routes->post('actualizar/(:num)', 'ProveedoresController::update/$1');
+            $routes->post('eliminar/(:num)', 'ProveedoresController::delete/$1');
         });
 
-        $routes->group('areas', static function ($routes) {
+        $routes->group('areas', static function ($routes) 
+        {
             $routes->get('/', 'AreasController::index');
-            $routes->post('crear', 'AreasController::create');
             $routes->get('list', 'AreasController::listar');
+
+            $routes->post('crear', 'AreasController::create');
+            $routes->post('actualizar/(:num)', 'AreasController::update/$1');
+            $routes->post('eliminar/(:num)', 'AreasController::delete/$1');
         });
 
-        $routes->group('usuarios', static function ($routes) {
+        $routes->group('usuarios', static function ($routes) 
+        {
             $routes->get('/', 'UserController::index');
             $routes->post('crear', 'UserController::create');
             $routes->get('list', 'UserController::listar');
+            $routes->post('actualizar/(:num)', 'UserController::update/$1');
+            $routes->post('eliminar/(:num)', 'UserController::delete/$1');
         });
     });
 

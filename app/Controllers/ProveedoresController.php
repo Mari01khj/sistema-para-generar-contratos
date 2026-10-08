@@ -56,4 +56,63 @@ class ProveedoresController extends BaseController
             'errors' => $this->proveedorModel->errors()
         ]);
     }
+
+     public function update($id = null)
+    {
+        if ($id === null || !$this->proveedorModel->find($id)) 
+        {
+            return $this->response->setStatusCode(404)->setJSON([
+                'status'  => 404,
+                'message' => 'Proveedor no encontrado.'
+            ]);
+        }
+
+        $data = $this->request->getJSON(true);
+
+        if (empty($data)) 
+        {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status'  => 400,
+                'message' => 'No se enviaron datos para actualizar.'
+            ]);
+        }
+
+        if ($this->proveedoresModel->update($id, $data)) 
+        {
+            return $this->response->setStatusCode(200)->setJSON([
+                'status'  => 200,
+                'message' => 'Proveedor actualizado correctamente.'
+            ]);
+        }
+
+        return $this->response->setStatusCode(400)->setJSON([
+            'status' => 400,
+            'errors' => $this->proveedoresModel->errors()
+        ]);
+    }
+
+    // método eliminar
+    public function delete($id = null)
+    {
+        if ($id === null || !$this->proveedorModel->find($id)) 
+        {
+            return $this->response->setStatusCode(404)->setJSON([
+                'status'  => 404,
+                'message' => 'Proveedor no encontrado.'
+            ]);
+        }
+
+        if ($this->proveedorModel->delete($id)) 
+        {
+            return $this->response->setStatusCode(200)->setJSON([
+                'status'  => 200,
+                'message' => 'Proveedor eliminado correctamente.'
+            ]);
+        }
+
+        return $this->response->setStatusCode(400)->setJSON([
+            'status'  => 400,
+            'message' => 'Ocurrió un error al eliminar el proveedor.'
+        ]);
+    }
 }

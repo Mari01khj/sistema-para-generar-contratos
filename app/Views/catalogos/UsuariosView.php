@@ -69,6 +69,45 @@
         </div>
     </div>
 </div>
+<!-- Modal Editar Usuario -->
+<div class="modal fade" id="modalEditarUsuario" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Usuario</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarUsuario">
+                    <input type="hidden" id="edit_id">
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" class="form-control" id="edit_nombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Rol asignado 1=Administrador, 2=Operador</label>
+                        <input type="text" class="form-control" id="edit_rol_id" required>
+                    <div class="form-group">
+                        <label>Correo</label>
+                        <input type="text" class="form-control" id="edit_correo" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Contraseña</label>
+                        <input type="password" class="form-control" id="edit_password_hash" required>
+                    </div>     
+                </form>
+
+                <div id="alertaErrorEdit" class="alert alert-danger d-none mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnActualizar">Actualizar</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
@@ -110,8 +149,9 @@ function cargarUsuarios() {
                     <td>${usuario.correo}</td>
                     <td>${estado}</td>
                     <td>
-                        <button class="btn btn-primary btn-sm"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+                        <button class="btn btn-primary" onclick="editarUsuario(${usuario.id}, '${usuario.nombre}', '${usuario.correo}', 
+                        '${usuario.password_hash}')" btn-sm"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger" onclick="eliminarUsuario(${usuario.id})" btn-sm"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
             `;
@@ -170,5 +210,95 @@ function guardarUsuario() {
         btnGuardar.disabled = false;
     });
 }
+
+function eliminarUsuario(id) 
+{
+    if (confirm("¿Estás seguro de eliminar este usuario?")) 
+    {
+        fetch(`<?= base_url('usuarios/eliminar/') ?>${id}`, 
+        {
+            method: 'POST',
+            headers: 
+            {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 200) 
+            {
+                alert(data.message);
+                cargarUsuarios(); 
+            } 
+            else 
+            {
+                alert("Error: " + data.message);
+            }
+        })
+        .catch(error => console.error("Error al eliminar:", error));
+    }
+}
+function editarUsuario(id, nombre, correo, password_hash) {
+    document.getElementById('edit_id').value = id;
+    document.getElementById('edit_nombre').value = nombre;
+    document.getElementById('edit_rol_id').value = document.getElementById('rol_id').value; 
+    document.getElementById('edit_correo').value = correo;
+    document.getElementById('edit_password_hash').value = password_hash;
+    
+    document.getElementById('alertaErrorEdit').classList.add('d-none');
+
+    $('#modalEditarUsuario').modal('show');
+}
+
+// fech
+document.getElementById('btnActualizar').addEventListener('click', function() 
+{
+    const id = document.getElementById('edit_id').value;
+    
+    const datosActualizados = 
+    {
+        nombre: document.getElementById('edit_nombre').value,
+        rol_id: document.getElementById('edit_rol_id').value,
+        correo: document.getElementById('edit_correo').value,
+        password_hash: document.getElementById('edit_password_hash').value
+    };
+
+    let btnActualizar = document.getElementById('btnActualizar');
+    btnActualizar.disabled = true;
+    btnActualizar.innerText = "Actualizando...";
+
+    fetch(`<?= base_url('usuarios/actualizar/') ?>${id}`, 
+    {
+        method: 'POST',
+        headers: 
+        {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(datosActualizados)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 200) 
+        {
+            $('#modalEditarUsuario').modal('hide');
+            cargarUsuarios(); 
+            alert(data.message);
+        } 
+        else 
+        {
+            let divError = document.getElementById('alertaErrorEdit');
+            divError.innerHTML = data.message || "Error de validación.";
+            divError.classList.remove('d-none');
+        }
+    })
+    .catch(error => console.error('Error en fetch:', error))
+    .finally(() => 
+    {
+        btnActualizar.disabled = false;
+        btnActualizar.innerText = "Actualizar";
+    });
+});
 </script>
 <?= $this->endSection() ?>

@@ -157,11 +157,6 @@
 </div>
 
 <script>
-// Solo comodidades de interfaz: mostrar/ocultar el select de catálogo
-// según el tipo de dato, y sugerir un nombre técnico a partir de la
-// etiqueta. La validación real (la que de verdad protege los datos)
-// vive en el servidor, en CamposFormularioModel — esto es nada más
-// para que el formulario sea más agradable de usar.
 
 function quitarAcentos(texto) {
     return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -178,8 +173,6 @@ function actualizarVisibilidadLista(prefijo) {
     const nombreCampo = document.getElementById(prefijo + '_nombre_campo');
     const tipoDato = document.getElementById(prefijo + '_tipo_dato');
 
-    // Autogenerar el nombre técnico mientras el usuario escribe la etiqueta,
-    // SOLO si el usuario no lo ha tocado a mano todavía.
     let nombreCampoTocadoManualmente = false;
     nombreCampo.addEventListener('input', () => { nombreCampoTocadoManualmente = true; });
     etiqueta.addEventListener('input', () => {
@@ -192,8 +185,7 @@ function actualizarVisibilidadLista(prefijo) {
 
     tipoDato.addEventListener('change', () => actualizarVisibilidadLista(prefijo));
 });
-
-// Al abrir "editar", rellenar el formulario con los data-* del botón que se presionó.
+//rellenar el modal
 $('#modalEditarCampo').on('show.bs.modal', function (evento) {
     const boton = $(evento.relatedTarget);
     const form = document.getElementById('formEditarCampo');
