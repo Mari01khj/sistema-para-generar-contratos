@@ -26,6 +26,20 @@
 
     <link href="<?= base_url('css/sb-admin-2.min.css') ?>" rel="stylesheet">
 
+    <style>
+        #contenedorToasts {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1080;
+            min-width: 320px;
+        }
+        #contenedorToasts .toast {
+            min-width: 320px;
+            box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,.2);
+        }
+    </style>
+
 </head>
 
 
@@ -127,18 +141,6 @@
 
                 <div class="container-fluid">
 
-                    <?php if (session()->getFlashdata('error')): ?>
-
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-
-                            <i class="fas fa-exclamation-circle mr-1"></i> <?= esc(session()->getFlashdata('error')) ?>
-
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
-
-                        </div>
-
-                    <?php endif; ?>
-
                     <?= $this->renderSection('content') ?>
 
                 </div>
@@ -167,6 +169,10 @@
         <i class="fas fa-angle-up"></i>
 
     </a>
+
+    <!-- Notificaciones (toasts): un solo contenedor para toda la app. -->
+    <div id="contenedorToasts" aria-live="polite" aria-atomic="true"></div>
+
     <!-- Scripts: jQuery y Bootstrap -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -177,6 +183,47 @@
     <!-- JS de SB Admin 2 -->
     <script src="<?= base_url('js/sb-admin-2.min.js') ?>"></script>
 
+    <script>
+     
+        function mostrarToast(mensaje, tipo = 'success') {
+            const iconos = {
+                success: 'fa-check-circle',
+                danger:  'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+            };
+            const icono = iconos[tipo] || iconos.success;
+
+            const toastEl = document.createElement('div');
+            toastEl.className = `toast align-items-center text-white bg-${tipo} border-0`;
+            toastEl.setAttribute('role', 'alert');
+            toastEl.setAttribute('aria-live', 'assertive');
+            toastEl.setAttribute('aria-atomic', 'true');
+            toastEl.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas ${icono} mr-2"></i>${mensaje}
+                    </div>
+                    <button type="button" class="close mr-2 m-auto text-white" data-dismiss="toast" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            `;
+
+            document.getElementById('contenedorToasts').appendChild(toastEl);
+            $(toastEl).toast({ delay: 5000 }).toast('show');
+            $(toastEl).on('hidden.bs.toast', () => toastEl.remove());
+        }
+
+        
+        document.addEventListener('DOMContentLoaded', function () {
+            <?php if ($mensajeFlash = session()->getFlashdata('mensaje')): ?>
+                mostrarToast(<?= json_encode($mensajeFlash) ?>, 'success');
+            <?php endif; ?>
+            <?php if ($errorFlash = session()->getFlashdata('error')): ?>
+                mostrarToast(<?= json_encode($errorFlash) ?>, 'danger');
+            <?php endif; ?>
+        });
+    </script>
 
     <?= $this->renderSection('scripts') ?>
 

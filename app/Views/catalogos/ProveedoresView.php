@@ -140,12 +140,23 @@
 
 <script>
 
-document.addEventListener("DOMContentLoaded", function() 
+document.addEventListener("DOMContentLoaded", function()
 {
     cargarProveedores();
-    document.getElementById('btnGuardar').addEventListener('click', function() 
+    document.getElementById('btnGuardar').addEventListener('click', function()
     {
         guardarProveedor();
+    });
+
+    // Delegado: los botones "editar" se crean dinámicamente al recargar la
+    // tabla, así que el listener va en el tbody (que sí existe desde el
+    // inicio) y no en cada botón.
+    document.getElementById('tbodyProveedores').addEventListener('click', function (e) {
+        const boton = e.target.closest('.btnEditarProveedor');
+        if (!boton) return;
+
+        const proveedor = JSON.parse(boton.dataset.proveedor);
+        editarProveedor(proveedor);
     });
 });
 
@@ -185,11 +196,8 @@ function cargarProveedores()
                     <td>${proveedor.correo}</td>
                     <td>${estado}</td>
                     <td>
-                        <button class="btn btn-primary btn-sm" onclick="editarProveedor(
-                        ${proveedor.id}, '${proveedor.razon_social}', '${proveedor.representante_legal}', '${proveedor.rfc}', '${proveedor.actividad_economica}',
-                        '${proveedor.domicilio_fiscal}', '${proveedor.telefono}', '${proveedor.correo}')"><i class="fas fa-edit"></i></button>
-
-                        <button class="btn btn-danger" onclick="eliminarProveedor(${proveedor.id})" btn-sm"><i class="fas fa-trash"></i></button>
+                        <button class="btn btn-primary btn-sm btnEditarProveedor" data-proveedor='${JSON.stringify(proveedor).replace(/'/g, "&#39;")}'><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-sm" onclick="eliminarProveedor(${proveedor.id})"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
             `;
@@ -248,7 +256,7 @@ function guardarProveedor()
             document.getElementById('alertaError').classList.add('d-none');
             
             cargarProveedores(); 
-            alert(data.message); 
+            mostrarToast(data.message, 'success'); 
         } 
         else 
         {
@@ -280,27 +288,29 @@ function eliminarProveedor(id)
         .then(data => {
             if (data.status === 200) 
             {
-                alert(data.message);
+                mostrarToast(data.message, 'success');
                 cargarProveedores(); 
             } 
             else 
             {
-                alert("Error: " + data.message);
+                mostrarToast('Error: ' + data.message, 'danger');
             }
         })
         .catch(error => console.error("Error al eliminar:", error));
     }
 }
-function editarProveedor(id, razon_social, representante_legal, rfc, actividad_economica, domicilio_fiscal, correo, telefono) 
+function editarProveedor(proveedor)
 {
-    document.getElementById('edit_id')                  .value = id;
-    document.getElementById('edit_nombre_proveedor')    .value = razon_social;
-    document.getElementById('edit_representante_legal') .value = representante_legal;
-    document.getElementById('edit_rfc_proveedor')       .value = rfc;
-    document.getElementById('edit_actividad_economica') .value = actividad_economica;
-    document.getElementById('edit_domicilio_fiscal')    .value = domicilio_fiscal;
-    document.getElementById('edit_correo')              .value = correo;
-    document.getElementById('edit_telefono')            .value = telefono;
+    // "?? ''" evita que un valor NULL en la base de datos se convierta
+    // en el texto literal "null" dentro del campo (lo que pasaba antes).
+    document.getElementById('edit_id')                  .value = proveedor.id;
+    document.getElementById('edit_nombre_proveedor')    .value = proveedor.razon_social ?? '';
+    document.getElementById('edit_representante_legal') .value = proveedor.representante_legal ?? '';
+    document.getElementById('edit_rfc_proveedor')       .value = proveedor.rfc ?? '';
+    document.getElementById('edit_actividad_economica') .value = proveedor.actividad_economica ?? '';
+    document.getElementById('edit_domicilio_fiscal')    .value = proveedor.domicilio_fiscal ?? '';
+    document.getElementById('edit_correo')              .value = proveedor.correo ?? '';
+    document.getElementById('edit_telefono')            .value = proveedor.telefono ?? '';
     document.getElementById('alertaErrorEdit').classList.add('d-none');
 
     $('#modalEditarProveedor').modal('show');
@@ -311,15 +321,20 @@ document.getElementById('btnActualizar').addEventListener('click', function()
 {
     const id = document.getElementById('edit_id').value;
     
-    const datosActualizados = 
+    // Los nombres de estas llaves deben ser EXACTAMENTE los de
+    // ProveedoresModel::$allowedFields (razon_social, rfc, ...), porque el
+    // modelo descarta en silencio cualquier llave que no reconozca. Antes
+    // decía "nombre_proveedor" y "rfc_proveedor", que no existen ahí, así
+    // que esos dos datos nunca se actualizaban.
+    const datosActualizados =
     {
-        nombre_proveedor:   document.getElementById('edit_nombre_proveedor').value,
-        representante_legal:document.getElementById('edit_representante_legal').value,
-        rfc_proveedor:      document.getElementById('edit_rfc_proveedor').value,
-        actividad_economica:document.getElementById('edit_actividad_economica').value,
-        domicilio_fiscal:   document.getElementById('edit_domicilio_fiscal').value,
-        correo:             document.getElementById('edit_correo').value,
-        telefono:           document.getElementById('edit_telefono').value
+        razon_social:        document.getElementById('edit_nombre_proveedor').value,
+        representante_legal: document.getElementById('edit_representante_legal').value,
+        rfc:                 document.getElementById('edit_rfc_proveedor').value,
+        actividad_economica: document.getElementById('edit_actividad_economica').value,
+        domicilio_fiscal:    document.getElementById('edit_domicilio_fiscal').value,
+        correo:              document.getElementById('edit_correo').value,
+        telefono:            document.getElementById('edit_telefono').value
     };
 
     let btnActualizar = document.getElementById('btnActualizar');
@@ -342,7 +357,7 @@ document.getElementById('btnActualizar').addEventListener('click', function()
         {
             $('#modalEditarProveedor').modal('hide');
             cargarProveedores(); 
-            alert(data.message);
+            mostrarToast(data.message, 'success');
         } 
         else 
         {

@@ -4,7 +4,7 @@
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
-        <a href="<?= route_to('tiposContratoGestion') ?>" class="text-muted small"><i class="fas fa-arrow-left"></i> Tipos de contrato</a>
+        <a href="<?= url_to('tiposContratoGestion') ?>" class="text-muted small"><i class="fas fa-arrow-left"></i> Tipos de contrato</a>
         <h1 class="h3 mb-0 text-gray-800">Campos de: <?= esc($tipoContrato['nombre']) ?></h1>
     </div>
     <button class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#modalNuevoCampo">

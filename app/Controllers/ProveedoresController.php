@@ -57,6 +57,7 @@ class ProveedoresController extends BaseController
         ]);
     }
 
+    // método actualizar
      public function update($id = null)
     {
         if ($id === null || !$this->proveedorModel->find($id)) 
@@ -77,7 +78,7 @@ class ProveedoresController extends BaseController
             ]);
         }
 
-        if ($this->proveedoresModel->update($id, $data)) 
+        if ($this->proveedorModel->update($id, $data))
         {
             return $this->response->setStatusCode(200)->setJSON([
                 'status'  => 200,
@@ -87,7 +88,7 @@ class ProveedoresController extends BaseController
 
         return $this->response->setStatusCode(400)->setJSON([
             'status' => 400,
-            'errors' => $this->proveedoresModel->errors()
+            'errors' => $this->proveedorModel->errors()
         ]);
     }
 

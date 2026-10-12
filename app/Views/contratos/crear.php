@@ -9,10 +9,6 @@
     </div>
 </div>
 
-<?php if (session()->getFlashdata('error')): ?>
-    <div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div>
-<?php endif; ?>
-
 <?php if (session()->getFlashdata('errores_validacion')): ?>
     <div class="alert alert-danger">
         <ul class="mb-0">
@@ -23,7 +19,7 @@
     </div>
 <?php endif; ?>
 
-<!-- Paso 1: elegir el tipo de contrato. -->
+<!-- elegir el tipo de contrato. -->
 <div class="card shadow mb-4">
     <div class="card-body">
         <form method="GET" action="<?= site_url('contratos/nuevo') ?>">
@@ -80,7 +76,7 @@
                     <label>Descripción <span class="text-danger">*</span></label>
                     <input type="text" name="descripcion_corta" class="form-control" maxlength="255"
                         value="<?= old('descripcion_corta') ?>" placeholder="Ej. Adquisición de uniformes del Ayuntamiento" required>
-                    <small class="form-text text-muted">Resumen del objeto del contrato. Los detalles de cada pieza van en la tabla de Partidas, abajo.</small>
+                    <small class="form-text text-muted">Resumen del objeto del contrato. </small>
                 </div>
 
                 <div class="form-row">
@@ -148,11 +144,8 @@
             </div>
         <?php endif; ?>
 
-        <!-- Partidas: cada renglón es un bien/servicio del contrato (descripción detallada, -->
-        <!-- unidad de medida, cantidad, precio unitario). El importe de cada renglón y los -->
-        <!-- totales se recalculan aquí solo para que el usuario los vea; el servidor vuelve a -->
-        <!-- calcular todo antes de guardar, así que estos números en pantalla no son los que -->
-        <!-- deciden lo que se guarda. -->
+        <!-- Partidas: cada renglón es un bien/servicio del contrato -->
+     
         <div class="card shadow mb-4">
             <div class="card-header py-3 d-flex justify-content-between align-items-center">
                 <h6 class="m-0 font-weight-bold text-primary">Partidas</h6>
@@ -249,7 +242,7 @@
 <script>
 (function () {
     var cuerpo = document.getElementById('cuerpoPartidas');
-    if (!cuerpo) return; // no hay tipo de contrato elegido todavía
+    if (!cuerpo) return; 
 
     var plantilla = document.getElementById('plantillaFilaPartida');
     var contador  = cuerpo.querySelectorAll('.fila-partida').length;
@@ -300,10 +293,12 @@
         if (!boton) return;
 
         var filas = cuerpo.querySelectorAll('.fila-partida');
-        if (filas.length <= 1) {
-            // Siempre debe quedar al menos una fila: en vez de quitarla, se vacía.
+        if (filas.length <= 1) 
+        {
             boton.closest('tr').querySelectorAll('input').forEach(function (input) { input.value = ''; });
-        } else {
+        } 
+        else 
+        {
             boton.closest('tr').remove();
         }
         recalcular();

@@ -191,7 +191,7 @@ function guardarArea()
             document.getElementById('alertaError').classList.add('d-none');
             
             cargarAreas(); 
-            alert(data.message); 
+            mostrarToast(data.message, 'success'); 
         } 
         else 
         {
@@ -220,12 +220,12 @@ function eliminarArea(id)
         .then(data => {
             if (data.status === 200) 
             {
-                alert(data.message);
+                mostrarToast(data.message, 'success');
                 cargarAreas(); 
             } 
             else 
             {
-                alert("Error: " + data.message);
+                mostrarToast('Error: ' + data.message, 'danger');
             }
         })
         .catch(error => console.error("Error al eliminar:", error));
@@ -274,7 +274,7 @@ document.getElementById('btnActualizar').addEventListener('click', function()
         {
             $('#modalEditarArea').modal('hide');
             cargarAreas(); 
-            alert(data.message);
+            mostrarToast(data.message, 'success');
         } 
         else 
         {

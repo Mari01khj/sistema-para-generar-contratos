@@ -60,7 +60,7 @@
                                     <?= (int) ($conteoCampos[$tipo['id']] ?? 0) ?> campo(s)
                                 </td>
                                 <td>
-                                    <a href="<?= route_to('camposFormularioGestion', $tipo['id']) ?>" class="btn btn-sm btn-outline-primary">
+                                    <a href="<?= url_to('camposFormularioGestion', $tipo['id']) ?>" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-list-ul"></i> Gestionar campos
                                     </a>
                                 </td>
