@@ -29,6 +29,7 @@
                             <th>Tipo</th>
                             <th>Proveedor</th>
                             <th>Área</th>
+                            <th class="text-right">Total</th>
                             <th>Estado</th>
                             <th>Creado</th>
                         </tr>
@@ -40,6 +41,7 @@
                                 <td><?= esc($contrato['tipo_nombre']) ?></td>
                                 <td><?= esc($contrato['razon_social']) ?></td>
                                 <td><?= esc($contrato['nombre_area']) ?></td>
+                                <td class="text-right">$<?= number_format((float) $contrato['total'], 2) ?></td>
                                 <td><span class="badge badge-secondary"><?= esc($contrato['estado']) ?></span></td>
                                 <td><?= esc($contrato['created_at']) ?></td>
                             </tr>

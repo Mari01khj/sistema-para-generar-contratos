@@ -36,11 +36,6 @@ class CreateProveedores extends Migration
                 'constraint' => 255,
                 'null'       => true,
             ],
-            'direccion' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 200,
-                'null'       => true,
-            ],
             'correo' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 100,

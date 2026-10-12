@@ -18,11 +18,9 @@ class BienesModel extends Model
         'descripcion',
         'unidad_medida',
         'marca',
+        'cantidad',
         'precio_unitario',
         'importe',
-        'subtotal',
-        'iva',
-        'total',
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -39,7 +37,13 @@ class BienesModel extends Model
     protected $deletedField  = 'deleted_at';
 
     // Validation
-    protected $validationRules      = [];
+    protected $validationRules      = [
+        'descripcion'     => 'required|max_length[500]',
+        'unidad_medida'   => 'required|max_length[50]',
+        'marca'           => 'permit_empty|max_length[60]',
+        'cantidad'        => 'required|decimal',
+        'precio_unitario' => 'required|decimal',
+    ];
     protected $validationMessages   = [];
     protected $skipValidation       = false;
     protected $cleanValidationRules = true;
@@ -54,4 +58,15 @@ class BienesModel extends Model
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
+
+    /**
+     * Las partidas (bienes) de un contrato, en el orden en que se
+     * capturaron, para mostrarlas en el detalle/PDF del contrato.
+     */
+    public function paraContrato(int $contratoId): array
+    {
+        return $this->where('contrato_id', $contratoId)
+            ->orderBy('num_partida', 'ASC')
+            ->findAll();
+    }
 }

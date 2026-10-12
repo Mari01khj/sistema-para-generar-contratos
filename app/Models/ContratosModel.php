@@ -18,13 +18,14 @@ class ContratosModel extends Model
         'proveedor_id',
         'area_solicitante_id',
         'descripcion_corta',
-        'descripcion_larga',
         'usuario_id',
         'estado',
         'fecha_entrega',
         'lugar_entrega',
         'plazo_pago',
-        'conddiciones_entrega'
+        'subtotal',
+        'iva',
+        'total',
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -46,7 +47,6 @@ class ContratosModel extends Model
         'proveedor_id'         => 'required|is_natural_no_zero',
         'area_solicitante_id'  => 'required|is_natural_no_zero',
         'descripcion_corta'    => 'required|max_length[255]',
-        'descripcion_larga'    => 'required',
         'fecha_entrega'        => 'permit_empty|valid_date[Y-m-d]',
         'lugar_entrega'        => 'permit_empty|max_length[255]',
         'plazo_pago'           => 'permit_empty|max_length[255]',
