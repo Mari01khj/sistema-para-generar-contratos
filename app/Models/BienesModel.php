@@ -59,14 +59,17 @@ class BienesModel extends Model
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
 
-    /**
-     * Las partidas (bienes) de un contrato, en el orden en que se
-     * capturaron, para mostrarlas en el detalle/PDF del contrato.
-     */
+    /**ordenar todo en el orden de captura*/
     public function paraContrato(int $contratoId): array
     {
         return $this->where('contrato_id', $contratoId)
             ->orderBy('num_partida', 'ASC')
             ->findAll();
+    }
+
+    /**borrar bienes registrados para poder elimiar un contrato asociado*/
+    public function borrarDeContrato(int $contratoId): bool
+    {
+        return $this->where('contrato_id', $contratoId)->delete();
     }
 }

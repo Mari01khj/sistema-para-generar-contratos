@@ -33,12 +33,7 @@ class CamposFormularioModel extends Model
     protected $updatedField  = 'updated_at';
     protected $deletedField  = 'deleted_at';
 
-    /**
-     * Única lista de tipos de dato válidos. Se usa tanto para validar
-     * (abajo, en validationRules) como para dibujar el <select> en la vista.
-     * Agregar un tipo de dato nuevo el día de mañana = agregar una línea
-     * aquí, no alterar la tabla.
-     */
+    /**  lista de tipos de dato válidos.*/
     public const TIPOS_DATO = [
         'texto'       => 'Texto corto',
         'texto_largo' => 'Texto largo (párrafo)',
@@ -47,10 +42,7 @@ class CamposFormularioModel extends Model
         'lista'       => 'Lista desplegable',
     ];
 
-    /**
-     * Catálogos de los que puede salir una lista desplegable.
-     * Solo aplica cuando tipo_dato = 'lista'.
-     */
+    /** Catálogos de los que puede salir una lista desplegable.*/
     public const CATALOGOS_LISTA = [
         'proveedores' => 'Proveedores',
         'areas'       => 'Áreas',
@@ -86,14 +78,7 @@ class CamposFormularioModel extends Model
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
 
-    /**
-     * ¿Ya existe otro campo con este nombre_campo en este mismo tipo de
-     * contrato? La tabla ya lo impide con una llave única (así que los
-     * datos nunca pueden quedar mal, pase lo que pase), pero preguntarlo
-     * ANTES de insertar nos deja mostrar un mensaje claro en vez de dejar
-     * que truene un error de base de datos a medio construir la fila.
-     * $excluirId se usa al editar, para no comparar el campo consigo mismo.
-     */
+
     public function existeNombreCampo(int $tipoContratoId, string $nombreCampo, ?int $excluirId = null): bool
     {
         $builder = $this->withDeleted()
@@ -107,14 +92,7 @@ class CamposFormularioModel extends Model
         return $builder->countAllResults() > 0;
     }
 
-    /**
-     * Deshace un borrado lógico. No usamos update() normal aquí a propósito:
-     * "deleted_at" NO está en $allowedFields (correcto, ningún formulario
-     * debería poder tocar esa columna directamente), así que para esta
-     * operación interna del sistema usamos el query builder sin pasar por
-     * ese filtro. protectFields nos protege de datos que vienen de afuera,
-     * no de este código que nosotros mismos escribimos.
-     */
+    /**Deshace un borrado lógico.*/
     public function reactivar(int $id): bool
     {
         return $this->builder()
@@ -122,11 +100,7 @@ class CamposFormularioModel extends Model
             ->update(['deleted_at' => null]);
     }
 
-    /**
-     * Campos activos (no eliminados) de un tipo de contrato, en el orden
-     * en que deben aparecer en el formulario. Esta es la consulta que
-     * vamos a usar en el paso 3 para armar el formulario dinámico.
-     */
+    /**Campos activos de un tipo de contrato en orden */
     public function paraTipoContrato(int $tipoContratoId): array
     {
         return $this->where('tipo_contrato_id', $tipoContratoId)

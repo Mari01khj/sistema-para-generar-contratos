@@ -28,6 +28,7 @@
                             <th class="text-right">Total</th>
                             <th>Estado</th>
                             <th>Creado</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -40,6 +41,20 @@
                                 <td class="text-right">$<?= number_format((float) $contrato['total'], 2) ?></td>
                                 <td><span class="badge badge-secondary"><?= esc($contrato['estado']) ?></span></td>
                                 <td><?= esc($contrato['created_at']) ?></td>
+                                <td class="text-nowrao"> 
+                                    <a href="<?= url_to('contratoVer', $contrato['id']) ?>" class="btn btn-sm btn-outline-secondary" title="Ver">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="<?= url_to('contratoEditar', $contrato['id']) ?>" class="btn btn-sm btn-outline-primary" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form method="POST" action="<?= site_url('contratos/' . $contrato['id'] . '/eliminar') ?>" class="d-inline"
+                                        onsubmit="return confirm('¿Eliminar el contrato <?= esc($contrato['folio'], 'js') ?>?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

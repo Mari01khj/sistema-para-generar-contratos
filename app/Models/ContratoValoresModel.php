@@ -1,12 +1,8 @@
 <?php
-
 namespace App\Models;
-
 use CodeIgniter\Model;
 
-/**
- * Una fila por cada campo dinámico lleno de cada contrato.
- */
+/**Una fila por cada campo dinámico lleno de cada contrato.*/
 class ContratoValoresModel extends Model
 {
     protected $table            = 'contrato_valores';
@@ -27,6 +23,7 @@ class ContratoValoresModel extends Model
     protected $updatedField  = 'updated_at';
 
 
+    /**Los valores dinámicos ya resueltos para mostrar*/
     public function paraContrato(int $contratoId): array
     {
         return $this->select('contrato_valores.*, campos_formulario.etiqueta, campos_formulario.nombre_campo, campos_formulario.tipo_dato')
@@ -34,5 +31,11 @@ class ContratoValoresModel extends Model
             ->where('contrato_valores.contrato_id', $contratoId)
             ->orderBy('campos_formulario.orden', 'ASC')
             ->findAll();
+    }
+
+    /** se borran los vlaores y si no, no se borra nada*/
+    public function borrarDeContrato(int $contratoId): bool
+    {
+        return $this->where('contrato_id', $contratoId)->delete();
     }
 }

@@ -73,10 +73,18 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
         $routes->post('operador/actualizar-datos', 'OperadorController::actualizarDatos');
     });
     
-    $routes->group('contratos', ['filter' => 'roleFilter:1,2'], static function ($routes) 
+    $routes->group('contratos', ['filter' => 'roleFilter:1,2'], static function ($routes)
     {
         $routes->get('/', 'ContratosController::index');
         $routes->get('nuevo', 'ContratosController::nuevo');
         $routes->post('crear', 'ContratosController::create');
+
+        // Paso 4: ver/editar/eliminar un contrato ya guardado.
+        // (:num) captura el id del contrato y se lo pasa al método como
+        // primer parámetro (el "$1" de cada ruta).
+        $routes->get('(:num)', 'ContratosController::ver/$1', ['as' => 'contratoVer']);
+        $routes->get('(:num)/editar', 'ContratosController::editar/$1', ['as' => 'contratoEditar']);
+        $routes->post('(:num)/actualizar', 'ContratosController::actualizar/$1');
+        $routes->post('(:num)/eliminar', 'ContratosController::eliminar/$1');
     });
 });
