@@ -40,7 +40,7 @@
                                 <td><?= esc($contrato['nombre_area']) ?></td>
                                 <td class="text-right">$<?= number_format((float) $contrato['total'], 2) ?></td>
                                 <td><span class="badge badge-secondary"><?= esc($contrato['estado']) ?></span></td>
-                                <td><?= esc($contrato['created_at']) ?></td>
+                                <td><?= esc(substr($contrato['created_at'], 0, 10)) ?></td>
                                 <td class="text-nowrao"> 
                                     <a href="<?= url_to('contratoVer', $contrato['id']) ?>" class="btn btn-sm btn-outline-secondary" title="Ver">
                                         <i class="fas fa-eye"></i>

@@ -6,11 +6,14 @@
     <h1 class="h3 mb-0 text-gray-800">Panel de Control - Operador</h1>
 </div>
 
+
 <div class="row">
+
     <!-- Acceso a Contratos -->
     <div class="col-lg-6 mb-4">
-        <div class="card shadow mb-4">
-            <div class="card-header py-3 bg-primary">
+        <div class="card shadow h-100">
+            <div class="card-header py-3 bg-primary d-flex align-items-center">
+                <i class="fas fa-file-contract text-white mr-2"></i>
                 <h6 class="m-0 font-weight-bold text-white">Gestión de Contratos</h6>
             </div>
             <div class="card-body">
@@ -26,5 +29,23 @@
             </div>
         </div>
     </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3 bg-info d-flex align-items-center">
+                <i class="fas fa-user text-white mr-2"></i>
+                <h6 class="m-0 font-weight-bold text-white">Mi Perfil</h6>
+            </div>
+            <div class="card-body">
+                <p>Consulta o actualiza tus datos de usuario.</p>
+                <a href="<?= base_url('perfil') ?>" class="btn btn-info btn-icon-split">
+                    <span class="icon text-white-50"><i class="fas fa-id-card"></i></span>
+                    <span class="text">Mis Datos</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
 
 <?= $this->endSection() ?>

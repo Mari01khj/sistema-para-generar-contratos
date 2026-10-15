@@ -24,6 +24,7 @@ class CamposFormularioSeeder extends Seeder
                     ['etiqueta' => 'Importe del 5%',         'nombre_campo' => 'cinco_importe',      'tipo_dato' => 'numero', 'obligatorio' => 1, 'orden' => 40],
                 ],
             ],
+            
             [
                 'alias' => ['contrato con anticipo'],
                 'campos' => [
