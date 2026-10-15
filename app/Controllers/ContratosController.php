@@ -9,13 +9,23 @@ use App\Models\ContratosModel;
 use App\Models\ContratoValoresModel;
 use App\Models\ProveedoresModel;
 use App\Models\TipoContrato;
+use App\Libraries\GeneradorPdfContrato;
+use RuntimeException;
 
 class ContratosController extends BaseController
 {
-    /**Tasa de IVA usada para calcular el impuesto de todos los contratos.*/
+    /**
+     * Tasa de IVA usada para calcular el impuesto de todos los contratos.
+     * Vive aquí, en un solo lugar, para que el día que cambie no haya que
+     * buscarla en varios archivos.
+     */
     private const TASA_IVA = 0.16;
 
-    /** campos fijos de la tabla contratos que no se pueden usar como campos dinámicos.*/
+    /**
+     * Nombres que NUNCA deben tratarse como "campo dinámico" aunque algún
+     * día alguien los capture por accidente en campos_formulario: ya son
+     * columnas fijas de "contratos" o pertenecen a la tabla de partidas.
+     */
     private const CAMPOS_RESERVADOS = [
         'folio',
         'tipo_contrato_id',
@@ -52,7 +62,7 @@ class ContratosController extends BaseController
     }
 
     /**
-     * Listado de contratos que incluye los eliminados
+     * Listado de contratos 
      */
     public function index()
     {
@@ -61,9 +71,12 @@ class ContratosController extends BaseController
         ]);
     }
 
-    /** pantalla de solo lectura */
+    /**
+     * pantalla de SOLO LECTURA de un contrato ya guardado.
+     */
     public function ver(int $id)
     {
+    
         $contrato = $this->contratoModel->unoConDetalle($id);
 
         if (! $contrato) {
@@ -78,6 +91,53 @@ class ContratosController extends BaseController
         ]);
     }
 
+    /**
+     * genera el PDF del contrato a partir del machote de Word del
+     * tipo de contrato, con los placeholders ya sustituidos.
+     */
+    public function exportarPdf(int $id)
+    {
+        $contrato = $this->contratoModel->unoConDetalle($id);
+
+        if (! $contrato) {
+            return redirect()->to(site_url('contratos'))
+                ->with('error', 'Ese contrato no existe o fue eliminado.');
+        }
+
+        $tipoContrato = $this->tipoContratoModel->find($contrato['tipo_contrato_id']);
+        $proveedor    = $this->proveedoresModel->find($contrato['proveedor_id']);
+        $area         = $this->areasModel->find($contrato['area_solicitante_id']);
+
+        if (empty($tipoContrato['plantilla'])) {
+            return redirect()->to(site_url('contratos/' . $id))
+                ->with('error', 'Este tipo de contrato no tiene una plantilla de Word asignada. '
+                    . 'Sube una en Tipos de contrato → Gestionar plantilla antes de exportar.');
+        }
+
+        try {
+            $rutaPdf = (new GeneradorPdfContrato())->generar(
+                contrato: $contrato,
+                proveedor: $proveedor,
+                area: $area,
+                valoresDinamicos: $this->valorModel->paraContrato($id),
+                partidas: $this->bienesModel->paraContrato($id),
+                rutaPlantilla: WRITEPATH . $tipoContrato['plantilla']
+            );
+        } 
+        catch (RuntimeException $e) 
+        {
+            return redirect()->to(site_url('contratos/' . $id))
+                ->with('error', $e->getMessage());
+        }
+
+    
+        $nombreDescarga = $contrato['folio'] . '.pdf';
+
+        return $this->response->download($rutaPdf, null)
+            ->setFileName($nombreDescarga)
+            ->setContentType('application/pdf');
+    }
+
     public function nuevo()
     {
         $tipos = $this->tipoContratoModel->where('activo', 1)->findAll();
@@ -90,18 +150,16 @@ class ContratosController extends BaseController
         if ($tipoContratoId > 0) {
             $tipoContrato = $this->tipoContratoModel->find($tipoContratoId);
 
-            // Si el tipo de contrato no existe o está inactivo, se ignora 
+            // Un tipo de contrato desactivado no debe poder usarse para contratos nuevos
             if ($tipoContrato && $tipoContrato['activo']) {
                 $camposDinamicos = $this->camposDinamicosDelTipo($tipoContratoId);
                 $opcionesListas  = $this->opcionesListasPara($camposDinamicos);
-            }
-            else 
-            {
+            } else {
                 $tipoContrato = null;
             }
         }
 
-        // Si venimos de un error de validación trae las filas que el usuario ya había escrito
+        // Si venimos de un error trae los datos que el usuario ya habia escrito
         $filasBienesPrevias = $this->request->getOldInput('bienes') ?: [[]];
 
         return view('contratos/crear', [
@@ -116,7 +174,8 @@ class ContratosController extends BaseController
     }
 
     /**
-     * para editar un contrato que ya existe se reutiliza el mismo partial pero con dos diferencias
+     * Pformulario para editar un contrato que ya existe. Reutiliza
+     * el mismo partial de formulario que nuevo pero con dos diferencias
      *  1) El tipo de contrato NO se puede cambiar aquí. 
      *  2) Los campos y las partidas vienen precargados con lo que ya había guardado 
      */
@@ -133,22 +192,20 @@ class ContratosController extends BaseController
         $camposDinamicos = $this->camposDinamicosDelTipo($contrato['tipo_contrato_id']);
         $opcionesListas  = $this->opcionesListasPara($camposDinamicos);
 
+        // Los valores dinámicos ya guardados se acomodan 
         $valoresCampos = [];
         foreach ($this->valorModel->paraContrato($id) as $valorGuardado) {
             $valoresCampos[$valorGuardado['campo_id']] = $valorGuardado['valor'];
         }
 
-      
         foreach ($camposDinamicos as $campo) {
             $valorViejo = old('campos.' . $campo['id']);
-
-            if ($valorViejo !== null) 
-            {
+            if ($valorViejo !== null) {
                 $valoresCampos[$campo['id']] = $valorViejo;
             }
         }
 
-        // lo mismo sucede para las partidas
+        // Mismo criterio: old si venimos de un error, si no, las partidas que ya estaban.
         $filasBienesPrevias = $this->request->getOldInput('bienes')
             ?: $this->bienesModel->paraContrato($id);
 
@@ -207,7 +264,7 @@ class ContratosController extends BaseController
                 ->with('errores_validacion', $errores);
         }
 
-        // Los montos NUNCA se recalculan aquí, se calculan a partir de las partidas ya validadas
+        // Los montos NUNCA se recalculan aquí, solo a partir de las partidas ya validadas.
         $subtotal = 0.0;
         foreach ($partidasValidas as $partida) {
             $subtotal += $partida['importe'];
@@ -220,9 +277,10 @@ class ContratosController extends BaseController
         $datosFijos['iva']      = $ivaMonto;
         $datosFijos['total']    = $total;
 
-        
+      
         $datosFijos['folio'] = 'TMP-' . bin2hex(random_bytes(8));
 
+      
         $db = db_connect();
         $db->transStart();
 
@@ -272,12 +330,13 @@ class ContratosController extends BaseController
             ->with('mensaje', 'Contrato ' . $folio . ' registrado correctamente.');
     }
 
-    // metodo de actualizar
+   //metodo de actualizar un contrato 
     public function actualizar(int $id)
     {
         $contrato = $this->contratoModel->find($id);
 
-        if (! $contrato) {
+        if (! $contrato) 
+        {
             return redirect()->to(site_url('contratos'))
                 ->with('error', 'Ese contrato no existe o fue eliminado.');
         }
@@ -293,6 +352,7 @@ class ContratosController extends BaseController
             'plazo_pago'          => $this->request->getPost('plazo_pago'),
         ];
 
+        
         $datosParaValidar = $datosFijos + ['tipo_contrato_id' => $tipoContratoId];
 
         $camposDinamicos = $this->camposDinamicosDelTipo($tipoContratoId);
@@ -308,8 +368,7 @@ class ContratosController extends BaseController
             $erroresBienes
         );
 
-        if ($errores) 
-        {
+        if ($errores) {
             return redirect()->to(site_url('contratos/' . $id . '/editar'))
                 ->withInput()
                 ->with('error', 'Revisa los campos marcados.')
@@ -334,28 +393,24 @@ class ContratosController extends BaseController
 
         $this->contratoModel->update($id, $datosFijos);
 
-        // Se borran valores dinamicos y partidas para actualizarlas
+      //se guardan los valores y remplazamos los viejos, si es que ya existian
         $this->valorModel->borrarDeContrato($id);
-        if ($valoresValidos) 
-        {
+        if ($valoresValidos) {
             $filas = [];
-            foreach ($valoresValidos as $campoId => $valor) 
-            {
+            foreach ($valoresValidos as $campoId => $valor) {
                 $filas[] = [
                     'contrato_id' => $id,
                     'campo_id'    => $campoId,
                     'valor'       => $valor,
                 ];
             }
-            
             $this->valorModel->insertBatch($filas);
         }
 
         $this->bienesModel->borrarDeContrato($id);
         $filasPartidas = [];
         $numPartida    = 1;
-        foreach ($partidasValidas as $partida) 
-        {
+        foreach ($partidasValidas as $partida) {
             $filasPartidas[] = [
                 'contrato_id'     => $id,
                 'num_partida'     => $numPartida++,
@@ -380,10 +435,7 @@ class ContratosController extends BaseController
         return redirect()->to(site_url('contratos/' . $id))
             ->with('mensaje', 'Contrato ' . $contrato['folio'] . ' actualizado correctamente.');
     }
-
-    /**
-     *no elimina por el soft delete
-     */
+//softdelete
     public function eliminar(int $id)
     {
         $contrato = $this->contratoModel->find($id);
@@ -435,7 +487,8 @@ class ContratosController extends BaseController
         return [$valores, $errores];
     }
 
-    /** las partidas tienen que estar bien llendas */
+    /**
+     * Valida las filas de la tabla de partidas */
     private function validarBienes(array $filas): array
     {
         $validas = [];
@@ -448,7 +501,6 @@ class ContratosController extends BaseController
             $cantidad      = trim((string) ($fila['cantidad'] ?? ''));
             $precioUnitario = trim((string) ($fila['precio_unitario'] ?? ''));
 
-            // Fila completamente vacía: se ignora, no es un error.
             if ($descripcion === '' && $unidadMedida === '' && $cantidad === '' && $precioUnitario === '') {
                 continue;
             }

@@ -24,8 +24,10 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
         {
             $routes->get('/', 'TipoContratoController::gestion', ['as' => 'tiposContratoGestion']);
             $routes->post('crear', 'TipoContratoController::create');
+            
+            $routes->post('(:num)/plantilla', 'TipoContratoController::actualizarPlantilla/$1');
 
-            // Campos 
+            // Campos
             $routes->get('(:num)/campos', 'CamposFormularioController::gestion/$1', ['as' => 'camposFormularioGestion']);
             $routes->post('(:num)/campos/crear', 'CamposFormularioController::create/$1');
         });
@@ -59,31 +61,31 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
         $routes->group('usuarios', static function ($routes) 
         {
             $routes->get('/', 'UserController::index');
-            $routes->get('list', 'UserController::listar');
-            
             $routes->post('crear', 'UserController::create');
+            $routes->get('list', 'UserController::listar');
             $routes->post('actualizar/(:num)', 'UserController::update/$1');
             $routes->post('eliminar/(:num)', 'UserController::delete/$1');
         });
     });
-//operador con filtro 2
+
     $routes->group('', ['filter' => 'roleFilter:2'], static function ($routes) 
     {
         $routes->get('operador/dashboardOperador', 'OperadorController::dashboardOperador');
         $routes->get('perfil', 'OperadorController::misDatos');
-
         $routes->post('operador/actualizar-datos', 'OperadorController::actualizarDatos');
     });
     
     $routes->group('contratos', ['filter' => 'roleFilter:1,2'], static function ($routes)
     {
-        $routes->get('/',             'ContratosController::index');
-        $routes->get('nuevo',         'ContratosController::nuevo');
-        $routes->get('(:num)',        'ContratosController::ver/$1', ['as' => 'contratoVer']);
-        $routes->get('(:num)/editar', 'ContratosController::editar/$1', ['as' => 'contratoEditar']);
+        $routes->get('/', 'ContratosController::index');
+        $routes->get('nuevo', 'ContratosController::nuevo');
+        $routes->post('crear', 'ContratosController::create');
 
-        $routes->post('crear',        'ContratosController::create');
+        $routes->get('(:num)', 'ContratosController::ver/$1', ['as' => 'contratoVer']);
+        $routes->get('(:num)/editar', 'ContratosController::editar/$1', ['as' => 'contratoEditar']);
+       
+        $routes->get('(:num)/pdf', 'ContratosController::exportarPdf/$1', ['as' => 'contratoPdf']);
         $routes->post('(:num)/actualizar', 'ContratosController::actualizar/$1');
-        $routes->post('(:num)/eliminar',   'ContratosController::eliminar/$1');
+        $routes->post('(:num)/eliminar', 'ContratosController::eliminar/$1');
     });
 });

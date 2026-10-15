@@ -48,6 +48,15 @@
                                     <?php else: ?>
                                         <span class="text-muted">— sin plantilla —</span>
                                     <?php endif; ?>
+                                    
+                                    <form method="POST" action="<?= site_url('tipos-contrato/' . $tipo['id'] . '/plantilla') ?>"
+                                        enctype="multipart/form-data" class="mt-1">
+                                        <input type="file" name="plantilla" accept=".docx,.doc,.xlsx,.xls"
+                                            class="form-control-file"
+                                            style="font-size: 0.75rem;"
+                                            onchange="if (this.files.length) { this.form.submit(); }"
+                                            title="Reemplazar plantilla">
+                                    </form>
                                 </td>
                                 <td>
                                     <?php if ($tipo['activo']): ?>

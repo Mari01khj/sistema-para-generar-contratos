@@ -78,4 +78,50 @@ class TipoContratoController extends BaseController
         return redirect()->to(route_to('tiposContratoGestion'))
             ->with('mensaje', 'Tipo de contrato "' . $data['nombre'] . '" registrado correctamente.');
     }
+
+    /**
+     * Reemplaza SOLO el archivo de la plantilla de un tipo de contrato 
+     */
+    public function actualizarPlantilla(int $id)
+    {
+        $tipoContrato = $this->tipoContratoModel->find($id);
+
+        if (! $tipoContrato) {
+            return redirect()->to(route_to('tiposContratoGestion'))
+                ->with('error', 'Ese tipo de contrato no existe.');
+        }
+
+        $archivo = $this->request->getFile('plantilla');
+
+        if (! $archivo || ! $archivo->isValid() || $archivo->hasMoved()) {
+            return redirect()->to(route_to('tiposContratoGestion'))
+                ->with('error', 'Selecciona un archivo válido para la plantilla.');
+        }
+
+        $extension  = strtolower($archivo->getClientExtension());
+        $permitidas = ['docx', 'doc', 'xlsx', 'xls'];
+
+        if (! in_array($extension, $permitidas, true)) {
+            return redirect()->to(route_to('tiposContratoGestion'))
+                ->with('error', 'Formato no permitido. Solo se aceptan archivos Word (.docx) o Excel (.xlsx).');
+        }
+
+        // Guarda la ruta del archivo VIEJO antes de pisarla, para borrarlo
+        // del disco después de que el nuevo ya se haya guardado bien 
+        $rutaAnterior = $tipoContrato['plantilla'] ? WRITEPATH . $tipoContrato['plantilla'] : null;
+
+        $nuevoNombre = uniqid('plantilla_', true) . '.' . $extension;
+        $archivo->move(WRITEPATH . 'uploads/plantillas', $nuevoNombre);
+
+        $this->tipoContratoModel->update($id, [
+            'plantilla' => 'uploads/plantillas/' . $nuevoNombre,
+        ]);
+
+        if ($rutaAnterior && is_file($rutaAnterior)) {
+            unlink($rutaAnterior);
+        }
+
+        return redirect()->to(route_to('tiposContratoGestion'))
+            ->with('mensaje', 'Plantilla de "' . $tipoContrato['nombre'] . '" actualizada correctamente.');
+    }
 }

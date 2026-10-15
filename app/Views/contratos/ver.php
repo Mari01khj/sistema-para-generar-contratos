@@ -8,9 +8,22 @@
         <h1 class="h3 mb-0 text-gray-800"><?= esc($contrato['folio']) ?></h1>
     </div>
     <div>
+        <!-- Un simple <a href>, no un <form>, porque exportar el PDF no -->
+        <!-- cambia nada en la base de datos (es un GET de solo lectura), -->
+        <!-- a diferencia de "Eliminar" de abajo. -->
+        <a href="<?= site_url('contratos/' . $contrato['id'] . '/pdf') ?>" class="btn btn-success">
+            <i class="fas fa-file-pdf"></i> Exportar PDF
+        </a>
         <a href="<?= site_url('contratos/' . $contrato['id'] . '/editar') ?>" class="btn btn-primary">
             <i class="fas fa-edit"></i> Editar
         </a>
+        <!-- El botón de eliminar manda un POST (no un simple <a href>) porque -->
+        <!-- borrar un registro nunca debe poder hacerse con un GET: un GET se -->
+        <!-- puede disparar solo (un bot, un antivirus que "precarga" enlaces, -->
+        <!-- el usuario dando doble clic), y queremos que esto solo pase cuando -->
+        <!-- alguien de verdad confirma la acción. El "confirm()" de abajo es -->
+        <!-- además una segunda red de seguridad, para que no sea un clic -->
+        <!-- accidental. -->
         <form method="POST" action="<?= site_url('contratos/' . $contrato['id'] . '/eliminar') ?>" class="d-inline"
             onsubmit="return confirm('¿Eliminar el contrato <?= esc($contrato['folio'], 'js') ?>? Esta acción no se puede deshacer desde la pantalla.');">
             <button type="submit" class="btn btn-danger">
@@ -110,7 +123,11 @@
             </table>
         </div>
 
-        <!-- totales  oficiales: vienen de la columna subtotal/iva/total. -->
+        <!-- Estos totales SÍ son los oficiales: vienen de la columna -->
+        <!-- subtotal/iva/total de la tabla contratos, que el servidor -->
+        <!-- recalculó y guardó al crear/editar (nunca se confía en lo que -->
+        <!-- mande el navegador). A diferencia de la vista previa del -->
+        <!-- formulario, esto no se vuelve a calcular en el navegador. -->
         <table class="table table-sm mt-3" style="max-width: 320px; margin-left: auto;">
             <tr>
                 <th>Subtotal</th>
