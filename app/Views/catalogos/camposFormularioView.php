@@ -130,7 +130,7 @@
     </div>
 </div>
 
-<!-- Modal: editar campo (un solo modal, se rellena por JS al abrirlo) -->
+<!-- Modal: editar campo -->
 <div class="modal fade" id="modalEditarCampo" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <form action="<?= site_url('campos') ?>/0/editar" method="POST" id="formEditarCampo">

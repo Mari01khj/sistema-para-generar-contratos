@@ -16,10 +16,6 @@ class CamposFormularioController extends BaseController
         $this->tipoContratoModel = new TipoContrato();
     }
 
-    /**
-     * Pantalla: campos de UN tipo de contrato en particular.
-     * $tipoContratoId viene de la URL: tipos-contrato/{id}/campos
-     */
     public function gestion(int $tipoContratoId)
     {
         $tipoContrato = $this->tipoContratoModel->find($tipoContratoId);
@@ -29,9 +25,7 @@ class CamposFormularioController extends BaseController
                 ->with('error', 'Ese tipo de contrato no existe.');
         }
 
-        // withDeleted(): a diferencia de paraTipoContrato() (que usa el
-        // formulario dinámico), aquí el admin SÍ necesita ver los campos
-        // eliminados, para poder reactivarlos si fue un error.
+        //aqui el admin puede ver todos los campos, incluso los "eliminados" 
         $campos = $this->campoModel
             ->withDeleted()
             ->where('tipo_contrato_id', $tipoContratoId)
@@ -44,7 +38,7 @@ class CamposFormularioController extends BaseController
             'campos'         => $campos,
             'tiposDato'      => CamposFormularioModel::TIPOS_DATO,
             'catalogosLista' => CamposFormularioModel::CATALOGOS_LISTA,
-            // Sugerencia de orden para el siguiente campo nuevo.
+            //para ordenar el nuvo campo
             'siguienteOrden' => count($campos) + 1,
         ]);
     }
@@ -63,7 +57,7 @@ class CamposFormularioController extends BaseController
             'etiqueta'         => $this->request->getPost('etiqueta'),
             'nombre_campo'     => $nombreCampo,
             'tipo_dato'        => $this->request->getPost('tipo_dato'),
-            // Si el tipo de dato no es "lista", origen_lista no aplica.
+            //solo para tipos de datos lista
             'origen_lista'     => $this->request->getPost('tipo_dato') === 'lista'
                 ? $this->request->getPost('origen_lista')
                 : null,
@@ -72,7 +66,8 @@ class CamposFormularioController extends BaseController
             'activo'           => 1,
         ];
 
-        if (! $this->campoModel->insert($data)) {
+        if (! $this->campoModel->insert($data)) 
+        {
             return redirect()->to(route_to('camposFormularioGestion', $tipoContratoId))->withInput()
                 ->with('error', 'No se pudo crear el campo.')
                 ->with('errores_validacion', $this->campoModel->errors());
@@ -86,13 +81,15 @@ class CamposFormularioController extends BaseController
     {
         $campo = $this->campoModel->find($id);
 
-        if (! $campo) {
+        if (! $campo)
+        {
             return redirect()->back()->with('error', 'Ese campo no existe.');
         }
 
         $nombreCampo = (string) $this->request->getPost('nombre_campo');
 
-        if ($this->campoModel->existeNombreCampo($campo['tipo_contrato_id'], $nombreCampo, $id)) {
+        if ($this->campoModel->existeNombreCampo($campo['tipo_contrato_id'], $nombreCampo, $id)) 
+        {
             return redirect()->to(route_to('camposFormularioGestion', $campo['tipo_contrato_id']))->withInput()
                 ->with('error', 'Ya existe otro campo con el nombre técnico "' . $nombreCampo . '" en este tipo de contrato.');
         }
@@ -119,9 +116,7 @@ class CamposFormularioController extends BaseController
     }
 
     /**
-     * Borrado LÓGICO (ver el porqué en la migración de campos_formulario):
-     * el campo deja de mostrarse en contratos nuevos, pero los contratos
-     * que ya lo usaron conservan su valor guardado.
+     * Borrado LÓGICO el campo deja de mostrarse en contratos nuevos, pero los contratos que ya lo usaron conservan su valor guardado.
      */
     public function delete(int $id)
     {

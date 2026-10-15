@@ -11,24 +11,12 @@ class ContratosModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
 
-    // Paso 4: "eliminar" un contrato NO lo borra de la base de datos.
-    // Con useSoftDeletes=true, Model::delete($id) en realidad hace
-    // UPDATE contratos SET deleted_at = NOW() WHERE id = $id, y a partir
-    // de ahí findAll()/find()/where() de este modelo IGNORAN esa fila
-    // automáticamente (como si no existiera), a menos que se use
-    // withDeleted() explícitamente. Así el contrato sigue en la base de
-    // datos por si se necesita consultar o recuperar, pero desaparece de
-    // los listados normales.
+    //NO lo borra de la base de datos. En realidad hace UPDATE a contratos y a partir de de este modelo IGNORAN esa fila
+    //Así el contrato sigue en la base de bdatos por si se necesita consultar o recuperar, pero desaparece de los listados normales.
+
     protected $useSoftDeletes   = true;
 
-    // protectFields=true es la razón por la que $allowedFields existe:
-    // cualquier llave del array que se le pase a insert()/update() que NO
-    // esté en esta lista se descarta en silencio (sin error, sin aviso).
-    // Es una medida de seguridad (nadie puede inyectar una columna que no
-    // debería tocar desde un formulario), pero también es la fuente de
-    // varios bugs "silenciosos" que hemos ido encontrando: si agregas una
-    // columna nueva a la tabla y se te olvida agregarla aquí, esa columna
-    // nunca se va a llenar y no vas a ver ningún error explicándolo.
+    // cualquier columna que no esté en $allowedFields será ignorada al hacer insert() o update()
     protected $protectFields    = true;
     protected $allowedFields    = [
         'folio',
@@ -56,13 +44,7 @@ class ContratosModel extends Model
     protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
-    // No hay columna "updated_at" en la tabla contratos, así que se deja
-    // vacío: CodeIgniter no intenta escribir en una columna que no existe.
     protected $updatedField  = '';
-    // Este es el nombre de columna que usan useSoftDeletes=true y
-    // withDeleted()/onlyDeleted() de arriba para saber dónde escribir y
-    // dónde filtrar. Tiene que coincidir con el nombre real de la columna
-    // (la que agrega la migración AddDeletedAtToContratos).
     protected $deletedField  = 'deleted_at';
 
 
@@ -92,10 +74,7 @@ class ContratosModel extends Model
 
 
     /**
-     * Para el listado (contratos/index): trae TODOS los contratos (los no
-     * eliminados; eso ya lo filtra useSoftDeletes solo) con el nombre del
-     * tipo, del proveedor y del área ya resueltos, para no tener que hacer
-     * una consulta aparte por cada fila solo para mostrar un nombre.
+     * Devuelve una lista de contratos con detalles.
      */
     public function listaConDetalle(): array
     {
@@ -107,11 +86,7 @@ class ContratosModel extends Model
             ->findAll();
     }
 
-    /**
-     * Lo mismo que listaConDetalle(), pero para UN solo contrato (lo usan
-     * ver() y editar() en el controlador). Regresa null si el id no
-     * existe o si el contrato ya fue "eliminado" (soft delete).
-     */
+    /**Lo mismo pero para UN solo contrato*/
     public function unoConDetalle(int $id): ?array
     {
         return $this->select('contratos.*, tipos_contrato.nombre as tipo_nombre, proveedores.razon_social, areas.nombre_area')

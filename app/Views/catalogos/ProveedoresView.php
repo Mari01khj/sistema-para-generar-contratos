@@ -301,8 +301,6 @@ function eliminarProveedor(id)
 }
 function editarProveedor(proveedor)
 {
-    // "?? ''" evita que un valor NULL en la base de datos se convierta
-    // en el texto literal "null" dentro del campo (lo que pasaba antes).
     document.getElementById('edit_id')                  .value = proveedor.id;
     document.getElementById('edit_nombre_proveedor')    .value = proveedor.razon_social ?? '';
     document.getElementById('edit_representante_legal') .value = proveedor.representante_legal ?? '';
@@ -316,16 +314,11 @@ function editarProveedor(proveedor)
     $('#modalEditarProveedor').modal('show');
 }
 
-// fech
+// fetch
 document.getElementById('btnActualizar').addEventListener('click', function() 
 {
     const id = document.getElementById('edit_id').value;
-    
-    // Los nombres de estas llaves deben ser EXACTAMENTE los de
-    // ProveedoresModel::$allowedFields (razon_social, rfc, ...), porque el
-    // modelo descarta en silencio cualquier llave que no reconozca. Antes
-    // decía "nombre_proveedor" y "rfc_proveedor", que no existen ahí, así
-    // que esos dos datos nunca se actualizaban.
+
     const datosActualizados =
     {
         razon_social:        document.getElementById('edit_nombre_proveedor').value,

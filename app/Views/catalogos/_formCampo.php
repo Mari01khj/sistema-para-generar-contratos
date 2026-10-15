@@ -1,8 +1,5 @@
 <?php
-// Parcial reutilizado por el modal de "nuevo campo" y el de "editar campo",
-// para no mantener el mismo formulario escrito dos veces.
-// $prefijoId distingue los IDs de cada copia (nuevo_etiqueta vs editar_etiqueta)
-// porque un id de HTML no puede repetirse dos veces en la misma página.
+// Parcial para no mantener el mismo formulario escrito dos veces.
 ?>
 <div class="form-group">
     <label>Etiqueta (lo que ve quien llena el contrato)</label>
