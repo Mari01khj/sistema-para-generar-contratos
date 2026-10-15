@@ -13,7 +13,7 @@ class GeneradorPdfContrato
     {
         return [
             'folio'               => $contrato['folio'],
-            'descripcion'         => $contrato['descripcion'],
+            'descripcion'         => $contrato['descripcion_corta'],
             'fecha_entrega'       => $contrato['fecha_entrega'] ?? '',
             'lugar_entrega'       => $contrato['lugar_entrega'] ?? '',
             'plazo_pago'          => $contrato['plazo_pago'] ?? '',
