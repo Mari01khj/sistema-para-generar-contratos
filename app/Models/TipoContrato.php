@@ -14,6 +14,8 @@ class TipoContrato extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'nombre',
+        'prefijo_fijo',
+        'siglas_procedimiento',
         'plantilla',
         'requiere_conceptos',
         'lleva_precios',

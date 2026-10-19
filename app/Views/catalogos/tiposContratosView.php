@@ -32,6 +32,7 @@
                     <thead>
                         <tr>
                             <th>Nombre</th>
+                            <th>Folio (prefijo / siglas)</th>
                             <th>Plantilla</th>
                             <th>Estado</th>
                             <th>Campos llenables</th>
@@ -43,12 +44,32 @@
                             <tr>
                                 <td><?= esc($tipo['nombre']) ?></td>
                                 <td>
+                                    <!-- Son las dos piezas fijas del folio real para este tipo -->
+                                    <!-- (ej. "TEM/CAS" y "CP" en TEM/CAS/FORTAMUN/CP-002/2026). -->
+                                    <!-- El consecutivo y el año se calculan solos; la fuente de -->
+                                    <!-- financiamiento se elige al crear cada contrato. -->
+                                    <form method="POST" action="<?= site_url('tipos-contrato/' . $tipo['id'] . '/folio') ?>" class="form-inline">
+                                        <input type="text" name="prefijo_fijo" class="form-control form-control-sm mr-1 mb-1"
+                                            style="width: 100px;" placeholder="TEM/CAS"
+                                            value="<?= esc($tipo['prefijo_fijo'] ?? '') ?>">
+                                        <input type="text" name="siglas_procedimiento" class="form-control form-control-sm mr-1 mb-1"
+                                            style="width: 70px; text-transform: uppercase;" placeholder="CP"
+                                            value="<?= esc($tipo['siglas_procedimiento'] ?? '') ?>">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary mb-1" title="Guardar">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                                <td>
                                     <?php if (! empty($tipo['plantilla'])): ?>
                                         <i class="fas fa-file-word text-primary"></i> <?= esc(basename($tipo['plantilla'])) ?>
                                     <?php else: ?>
                                         <span class="text-muted">— sin plantilla —</span>
                                     <?php endif; ?>
-                                    
+
+                                    <!-- Reemplazar el archivo SIN borrar el tipo de contrato: el input -->
+                                    <!-- de archivo se manda solo (onchange) en cuanto se elige uno, no -->
+                                    <!-- hace falta un botón "Guardar" aparte para esto. -->
                                     <form method="POST" action="<?= site_url('tipos-contrato/' . $tipo['id'] . '/plantilla') ?>"
                                         enctype="multipart/form-data" class="mt-1">
                                         <input type="file" name="plantilla" accept=".docx,.doc,.xlsx,.xls"
@@ -96,6 +117,19 @@
                         <label>Nombre</label>
                         <input type="text" name="nombre" class="form-control" placeholder="Ej. Arrendamiento" required>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label>Prefijo fijo del folio</label>
+                            <input type="text" name="prefijo_fijo" class="form-control" placeholder="Ej. TEM/CAS">
+                        </div>
+                        <div class="form-group col-6">
+                            <label>Siglas del procedimiento</label>
+                            <input type="text" name="siglas_procedimiento" class="form-control" style="text-transform: uppercase;" placeholder="Ej. CP">
+                        </div>
+                    </div>
+                    <small class="form-text text-muted mb-3 d-block">
+                        Estos dos campos se pueden dejar vacíos y llenar después desde la tabla.
+                    </small>
                     <div class="form-group">
                         <label>Plantilla del machote (.docx)</label>
                         <input type="file" name="plantilla" class="form-control-file" accept=".docx,.doc,.xlsx,.xls" required>

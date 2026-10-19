@@ -1,5 +1,35 @@
 <?php
-/** Dibuja el formulario completo de un contrato.*/
+/**
+ * Partial compartido por contratos/crear.php y contratos/editar.php.
+ *
+ * Dibuja el formulario completo de un contrato: datos generales, campos
+ * dinámicos del tipo y la tabla de Partidas. Está en un solo archivo para
+ * no tener que mantener la misma tabla de Partidas (con su JavaScript de
+ * agregar/quitar filas y recalcular totales) copiada y pegada en dos
+ * vistas: cualquier corrección se hace aquí una sola vez.
+ *
+ * Variables que espera recibir quien lo incluya (con <?= $this->include(...) ?>
+ * o view()):
+ *
+ *   $accionUrl          URL a la que se envía el POST (crear o actualizar).
+ *   $tipoContrato        El tipo de contrato ya elegido (array).
+ *   $proveedores, $areas  Catálogos activos, para los <select>.
+ *   $camposDinamicos      Campos de este tipo (ya filtrados, sin los reservados).
+ *   $opcionesListas        Opciones para los campos tipo "lista".
+ *   $filasBienesPrevias    Partidas a precargar en la tabla.
+ *   $valoresFijos (opcional)  ['proveedor_id'=>, 'descripcion_corta'=>, ...]
+ *                             para precargar "Datos generales" al editar.
+ *                             En crear.php simplemente no se manda (queda []).
+ *   $valoresCampos (opcional) [campo_id => valor] para precargar los campos
+ *                             dinámicos al editar. En crear.php no se manda.
+ *   $textoBoton (opcional)    Texto del botón de guardar.
+ *
+ * En TODOS los campos, el valor que haya en old() (lo último que el
+ * usuario escribió, si venimos de un error de validación) SIEMPRE gana
+ * sobre lo que venga en $valoresFijos/$valoresCampos (lo que ya había
+ * guardado en la base de datos). Así, si el usuario corrige un error y
+ * reenvía, no pierde lo que acababa de escribir en los demás campos.
+ */
 
 $valoresFijos  ??= [];
 $valoresCampos ??= [];
@@ -27,7 +57,6 @@ $textoBoton    ??= 'Guardar contrato';
                         <?php endforeach; ?>
                     </select>
                 </div>
-
                 <div class="form-group col-md-6">
                     <label>Área solicitante <span class="text-danger">*</span></label>
                     <?php $areaPrevia = old('area_solicitante_id') ?? ($valoresFijos['area_solicitante_id'] ?? null); ?>
@@ -47,8 +76,28 @@ $textoBoton    ??= 'Guardar contrato';
                 <input type="text" name="descripcion_corta" class="form-control" maxlength="255"
                     value="<?= esc(old('descripcion_corta') ?? ($valoresFijos['descripcion_corta'] ?? '')) ?>"
                     placeholder="Ej. Adquisición de uniformes del Ayuntamiento" required>
-                <small class="form-text text-muted">Resumen del contrato. Los detalles de cada bien van en la tabla de Partidas.</small>
+                <small class="form-text text-muted">Resumen del objeto del contrato. Los detalles de cada pieza van en la tabla de Partidas, abajo.</small>
             </div>
+
+            <?php if (isset($fuentes)): ?>
+                <!-- La fuente de financiamiento solo se elige al CREAR el -->
+                <!-- contrato: el folio ya se arma con ella, así que cambiarla -->
+                <!-- después dejaría el folio real sin coincidir con lo que -->
+                <!-- dice. Por eso en editar.php esto no aparece como <select>, -->
+                <!-- solo como texto informativo (ver editar.php). -->
+                <div class="form-group">
+                    <label>Fuente de financiamiento <span class="text-danger">*</span></label>
+                    <?php $fuentePrevia = old('fuente_financiamiento_id'); ?>
+                    <select name="fuente_financiamiento_id" class="form-control" style="max-width: 400px;" required>
+                        <option value="">Selecciona...</option>
+                        <?php foreach ($fuentes as $f): ?>
+                            <option value="<?= $f['id'] ?>" <?= $fuentePrevia == $f['id'] ? 'selected' : '' ?>>
+                                <?= esc($f['nombre']) ?> (<?= esc($f['clave']) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            <?php endif; ?>
 
             <div class="form-row">
                 <div class="form-group col-md-4">
@@ -67,6 +116,11 @@ $textoBoton    ??= 'Guardar contrato';
                         value="<?= esc(old('plazo_pago') ?? ($valoresFijos['plazo_pago'] ?? '')) ?>">
                 </div>
             </div>
+
+            <div class="form-group">
+                <label>Condiciones de entrega</label>
+                <textarea name="condiciones_entrega" class="form-control" rows="2"><?= esc(old('condiciones_entrega') ?? ($valoresFijos['condiciones_entrega'] ?? '')) ?></textarea>
+            </div>
         </div>
     </div>
 
@@ -84,6 +138,9 @@ $textoBoton    ??= 'Guardar contrato';
                         </label>
 
                         <?php
+                            // old() gana siempre; si no hay old(), se usa el
+                            // valor ya guardado que venga en $valoresCampos
+                            // (editar.php lo manda, crear.php lo deja vacío).
                             $valorPrevio = old('campos.' . $campo['id']) ?? ($valoresCampos[$campo['id']] ?? '');
                         ?>
 
@@ -120,7 +177,11 @@ $textoBoton    ??= 'Guardar contrato';
         </div>
     <?php endif; ?>
 
-    <!--  El importe de cada renglón y los totales se recalculan aquí solo para que el usuario los vea-->
+    <!-- Partidas: cada renglón es un bien/servicio del contrato (descripción detallada, -->
+    <!-- unidad de medida, cantidad, precio unitario). El importe de cada renglón y los -->
+    <!-- totales se recalculan aquí solo para que el usuario los vea; el servidor vuelve a -->
+    <!-- calcular todo antes de guardar, así que estos números en pantalla no son los que -->
+    <!-- deciden lo que se guarda. -->
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Partidas</h6>
@@ -204,7 +265,7 @@ $textoBoton    ??= 'Guardar contrato';
                     <td class="text-right"><strong id="txtTotal">$0.00</strong></td>
                 </tr>
             </table>
-            <p class="text-muted small mb-0">Estos montos el sistema los vuelve a calcular al guardar.</p>
+            <p class="text-muted small mb-0">Estos montos son solo una vista previa; el sistema los vuelve a calcular al guardar.</p>
         </div>
     </div>
 
@@ -216,7 +277,7 @@ $textoBoton    ??= 'Guardar contrato';
 <script>
 (function () {
     var cuerpo = document.getElementById('cuerpoPartidas');
-    if (!cuerpo) return; // no selecciono el tipo de contrato
+    if (!cuerpo) return; // no hay tipo de contrato elegido todavía
 
     var plantilla = document.getElementById('plantillaFilaPartida');
     var contador  = cuerpo.querySelectorAll('.fila-partida').length;
@@ -257,8 +318,7 @@ $textoBoton    ??= 'Guardar contrato';
     }
 
     cuerpo.addEventListener('input', function (e) {
-        if (e.target.classList.contains('campo-cantidad') || e.target.classList.contains('campo-precio')) 
-        {
+        if (e.target.classList.contains('campo-cantidad') || e.target.classList.contains('campo-precio')) {
             recalcular();
         }
     });
@@ -268,12 +328,10 @@ $textoBoton    ??= 'Guardar contrato';
         if (!boton) return;
 
         var filas = cuerpo.querySelectorAll('.fila-partida');
-        if (filas.length <= 1) 
-        {
+        if (filas.length <= 1) {
+            // Siempre debe quedar al menos una fila: en vez de quitarla, se vacía.
             boton.closest('tr').querySelectorAll('input').forEach(function (input) { input.value = ''; });
-        } 
-        else 
-        {
+        } else {
             boton.closest('tr').remove();
         }
         recalcular();

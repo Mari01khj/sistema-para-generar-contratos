@@ -14,10 +14,12 @@ class ProveedoresModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'razon_social',
+        'tipo_persona',
         'rfc',
         'representante_legal',
         'domicilio_fiscal',
         'actividad_economica',
+        'direccion',
         'correo',
         'telefono',
         'activo'

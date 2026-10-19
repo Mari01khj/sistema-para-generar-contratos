@@ -7,12 +7,11 @@ use PhpOffice\PhpWord\TemplateProcessor;
 
 use RuntimeException;
 /**
-
- *  1. PhpWord\TemplateProcessor abre el .docx tal cual y busca placeholders de
- *    para reemplazarlos por el valor real. El resultado es OTRO .docx
+ *  1) Se llena el machote (.docx con PhpWord o .xlsx con PhpSpreadsheet)
+ *     reemplazando los ${marcadores} por los valores reales.
  *
- *  2. El .docx ya lleno se convierte a PDF con LibreOffice en modo
- *     "headless".
+ *  2) El archivo ya lleno se convierte a PDF usando Word/Excel reales
+ *     (COM), que es lo que hay instalado en esta computadora.
  */
 class GeneradorPdfContrato
 {
@@ -21,13 +20,17 @@ class GeneradorPdfContrato
     {
         return [
             'folio'               => $contrato['folio'],
+            // fecha en que se elaboró el contrato (esquina superior del machote)
+            'fecha_elaboracion'   => isset($contrato['created_at']) ? date('d/m/Y', strtotime($contrato['created_at'])) : '',
             'descripcion'         => $contrato['descripcion_corta'],
             'fecha_entrega'       => $contrato['fecha_entrega'] ?? '',
             'lugar_entrega'       => $contrato['lugar_entrega'] ?? '',
             'plazo_pago'          => $contrato['plazo_pago'] ?? '',
+            'condiciones_entrega' => $contrato['condiciones_entrega'] ?? '',
             'subtotal'            => number_format((float) $contrato['subtotal'], 2),
             'iva'                 => number_format((float) $contrato['iva'], 2),
             'total'               => number_format((float) $contrato['total'], 2),
+            'total_texto'         => $this->numeroALetras((float) $contrato['total']),
 
             'nombre_proveedor'    => $contrato['razon_social'],
 
@@ -47,6 +50,9 @@ class GeneradorPdfContrato
             'correo_proveedor'     => $proveedor['correo'] ?? '',
             'domicilio_fiscal'     => $proveedor['domicilio_fiscal'] ?? '',
             'actividad_economica'  => $proveedor['actividad_economica'] ?? '',
+            // la "X" junto a PERSONA FISICA / PERSONA MORAL en el machote
+            'marca_fisica'         => ($proveedor['tipo_persona'] ?? '') === 'fisica' ? 'X' : '',
+            'marca_moral'          => ($proveedor['tipo_persona'] ?? '') === 'moral' ? 'X' : '',
         ];
     }
 
@@ -146,40 +152,60 @@ class GeneradorPdfContrato
             ? $this->llenarPlantillaWord($rutaPlantilla, $valores, $filasPartidas, $carpetaTemporal, $nombreBase)
             : $this ->llenarPlantillaExcel($rutaPlantilla, $valores, $filasPartidas, $carpetaTemporal, $nombreBase);
 
-        //el .docx ya lleno se convierte a PDF
+        //el .docx/.xlsx ya lleno se convierte a PDF con Word/Excel (COM)
 
-        $ejecutableLibreOffice = $this->rutaEjecutableLibreOffice();
+        set_time_limit(60);
 
-        // Cada conversión usa (parámetro -env:UserInstallation).
-        // por default, LibreOffice SIEMPRE usa la misma carpeta de perfil del sistema.
-        $carpetaPerfil = $carpetaTemporal . '/perfil_' . $nombreBase;
-
-        [$salidaComando, $codigoSalida] = $this->ejecutarComando($ejecutableLibreOffice, [
-            '--headless',
-            '--norestore',
-            '-env:UserInstallation=file://' . $carpetaPerfil,
-            '--convert-to',
-            'pdf',
-            '--outdir',
-            $carpetaTemporal,
-            $rutaDocumentoLleno,
-        ]);
-
-        // se borra la carpeta del perfil y el archivo .docx
-        $this->borrarCarpeta($carpetaPerfil);
-        unlink($rutaDocumentoLleno);
-
-        if ($codigoSalida !== 0 || ! is_file($rutaPdf))
-        {
+        if (! $this->convertirAPdfConOffice($rutaDocumentoLleno, $rutaPdf, $extension)) {
+            unlink($rutaDocumentoLleno);
             throw new RuntimeException(
-                'No se pudo convertir el documento a PDF con LibreOffice. '
-                . 'Revisa que esté bien instalado y que el archivo de la '
-                . 'plantilla no esté dañado. Detalle técnico: '
-                . $salidaComando
+                'No se pudo convertir el documento a PDF. Revisa que Microsoft '
+                . 'Word/Excel estén instalados en esta computadora y que la '
+                . 'extensión "com_dotnet" de PHP esté activa (extension=com_dotnet '
+                . 'en el php.ini de Apache).'
             );
         }
 
+        unlink($rutaDocumentoLleno);
+
         return $rutaPdf;
+    }
+
+    /**
+     * Convierte el documento a PDF usando Word/Excel reales via COM (solo
+     * funciona en Windows y con Office instalado). Regresa false si no se pudo.
+     */
+    private function convertirAPdfConOffice(string $rutaDocumento, string $rutaPdfDestino, string $extension): bool
+    {
+        if (! class_exists('COM')) {
+            return false;
+        }
+
+        $rutaDocumentoAbs = str_replace('/', '\\', realpath($rutaDocumento));
+        $rutaPdfAbs        = str_replace('/', '\\', $rutaPdfDestino);
+
+        try {
+            if ($extension === 'docx') {
+                $word = new \COM('Word.Application');
+                $word->Visible = false;
+                $documento = $word->Documents->Open($rutaDocumentoAbs);
+                $documento->SaveAs($rutaPdfAbs, 17); // 17 = wdFormatPDF
+                $documento->Close(false);
+                $word->Quit();
+            } else {
+                $excel = new \COM('Excel.Application');
+                $excel->Visible = false;
+                $excel->DisplayAlerts = false;
+                $libro = $excel->Workbooks->Open($rutaDocumentoAbs);
+                $libro->ExportAsFixedFormat(0, $rutaPdfAbs); // 0 = xlTypePDF
+                $libro->Close(false);
+                $excel->Quit();
+            }
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        return is_file($rutaPdfDestino);
     }
 
     /**
@@ -295,6 +321,9 @@ class GeneradorPdfContrato
 
             if (is_string($valorCelda) && $valorCelda !== '') {
                 $moldePorColumna[$letraColumna] = $valorCelda;
+            } elseif ($valorCelda instanceof \PhpOffice\PhpSpreadsheet\RichText\RichText) {
+                // celdas con texto de formato mixto (ej. "ETIQUETA: ${marcador}")
+                $moldePorColumna[$letraColumna] = $valorCelda->getPlainText();
             }
         }
 
@@ -357,9 +386,23 @@ class GeneradorPdfContrato
     {
         foreach ($hoja->getRowIterator() as $fila) {
             foreach ($fila->getCellIterator() as $celda) {
-                $texto = $celda->getValue();
-                if (is_string($texto) && str_contains($texto, '${')) {
-                    $celda->setValue($this->reemplazarPlaceholders($texto, $valores));
+                $valorCelda = $celda->getValue();
+
+                if (is_string($valorCelda) && str_contains($valorCelda, '${')) {
+                    $celda->setValue($this->reemplazarPlaceholders($valorCelda, $valores));
+                    continue;
+                }
+
+                // celdas con texto de formato mixto (ej. "ETIQUETA: ${marcador}"),
+                // PhpSpreadsheet las guarda como RichText y no como string simple
+                if ($valorCelda instanceof \PhpOffice\PhpSpreadsheet\RichText\RichText) {
+                    foreach ($valorCelda->getRichTextElements() as $elemento) {
+                        $texto = $elemento->getText();
+                        if (str_contains($texto, '${')) {
+                            $elemento->setText($this->reemplazarPlaceholders($texto, $valores));
+                        }
+                    }
+                    $celda->setValue($valorCelda);
                 }
             }
         }
@@ -375,83 +418,87 @@ class GeneradorPdfContrato
         return $texto;
     }
 
-
-    private function rutaEjecutableLibreOffice(): string
-    {
-        $candidatos = [
-            'soffice',
-            'libreoffice',
-            'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
-            'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe',
-        ];
-
-        foreach ($candidatos as $candidato) {
-            [, $codigo] = $this->ejecutarComando($candidato, ['--version']);
-            if ($codigo === 0) {
-                return $candidato;
-            }
-        }
-
-        throw new RuntimeException(
-            'No se encontró LibreOffice instalado en esta computadora. Es '
-            . 'necesario para convertir el Word a PDF '
-            . 'Descárgalo gratis desde '
-            . 'https://www.libreoffice.org/download/download/, instálalo, '
-            . 'y vuelve a intentar .'
-        );
-    }
-
-     private function ejecutarComando(string $ejecutable, array $argumentos): array
-    {
-        $descriptores = [
-            0 => ['pipe', 'r'],
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
-        ];
-
-        $proceso = @proc_open(
-            array_merge([$ejecutable], $argumentos),
-            $descriptores,
-            $tuberias,
-            null,
-            null,
-            ['bypass_shell' => true]
-        );
-
-        if (! is_resource($proceso)) {
-            return ['No se pudo ejecutar el comando.', 1];
-        }
-
-        fclose($tuberias[0]);
-        $salida      = stream_get_contents($tuberias[1]);
-        $salidaError = stream_get_contents($tuberias[2]);
-        fclose($tuberias[1]);
-        fclose($tuberias[2]);
-
-        $codigoSalida = proc_close($proceso);
-
-        return [trim($salida . "\n" . $salidaError), $codigoSalida];
-    }
-
-
     /**
-     * Borra una carpeta junto con todo lo que tenga adentro
+     * Convierte un monto a su representacion en letras para contratos
+     * (ej. 553.32 -> "QUINIENTOS CINCUENTA Y TRES PESOS 32/100 M.N.")
      */
-    private function borrarCarpeta(string $ruta): void
+    private function numeroALetras(float $monto): string
     {
-        if (! is_dir($ruta)) {
-            return;
+        $entero   = (int) floor($monto);
+        $centavos = (int) round(($monto - $entero) * 100);
+
+        $texto = $entero === 0 ? 'CERO' : $this->enteroALetras($entero);
+
+        return $texto . ' PESOS ' . str_pad((string) $centavos, 2, '0', STR_PAD_LEFT) . '/100 M.N.';
+    }
+
+    private function enteroALetras(int $numero): string
+    {
+        $unidades = ['', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+        $especiales = [
+            10 => 'DIEZ', 11 => 'ONCE', 12 => 'DOCE', 13 => 'TRECE', 14 => 'CATORCE',
+            15 => 'QUINCE', 16 => 'DIECISEIS', 17 => 'DIECISIETE', 18 => 'DIECIOCHO',
+            19 => 'DIECINUEVE', 20 => 'VEINTE',
+        ];
+        $decenas = [
+            3 => 'TREINTA', 4 => 'CUARENTA', 5 => 'CINCUENTA',
+            6 => 'SESENTA', 7 => 'SETENTA', 8 => 'OCHENTA', 9 => 'NOVENTA',
+        ];
+        $centenas = [
+            1 => 'CIENTO', 2 => 'DOSCIENTOS', 3 => 'TRESCIENTOS', 4 => 'CUATROCIENTOS',
+            5 => 'QUINIENTOS', 6 => 'SEISCIENTOS', 7 => 'SETECIENTOS', 8 => 'OCHOCIENTOS',
+            9 => 'NOVECIENTOS',
+        ];
+
+        if ($numero === 0) {
+            return 'CERO';
         }
 
-        foreach (scandir($ruta) ?: [] as $elemento) {
-            if ($elemento === '.' || $elemento === '..') {
-                continue;
+        if ($numero >= 1000000) {
+            $millones = intdiv($numero, 1000000);
+            $resto    = $numero % 1000000;
+            $texto    = $millones === 1 ? 'UN MILLON' : $this->enteroALetras($millones) . ' MILLONES';
+
+            return $resto > 0 ? $texto . ' ' . $this->enteroALetras($resto) : $texto;
+        }
+
+        if ($numero >= 1000) {
+            $miles = intdiv($numero, 1000);
+            $resto = $numero % 1000;
+            $texto = $miles === 1 ? 'MIL' : $this->enteroALetras($miles) . ' MIL';
+
+            return $resto > 0 ? $texto . ' ' . $this->enteroALetras($resto) : $texto;
+        }
+
+        if ($numero >= 100) {
+            if ($numero === 100) {
+                return 'CIEN';
             }
 
-            $rutaElemento = $ruta . '/' . $elemento;
-            is_dir($rutaElemento) ? $this->borrarCarpeta($rutaElemento) : unlink($rutaElemento);
+            $centena = intdiv($numero, 100);
+            $resto   = $numero % 100;
+            $texto   = $centenas[$centena];
+
+            return $resto > 0 ? $texto . ' ' . $this->enteroALetras($resto) : $texto;
         }
 
-        rmdir($ruta);
+        if ($numero > 20) {
+            $decena = intdiv($numero, 10);
+            $resto  = $numero % 10;
+
+            if ($decena === 2) {
+                return $resto > 0 ? 'VEINTI' . $unidades[$resto] : 'VEINTE';
+            }
+
+            $texto = $decenas[$decena];
+
+            return $resto > 0 ? $texto . ' Y ' . $unidades[$resto] : $texto;
+        }
+
+        if ($numero >= 10) {
+            return $especiales[$numero];
+        }
+
+        return $unidades[$numero];
     }
 }

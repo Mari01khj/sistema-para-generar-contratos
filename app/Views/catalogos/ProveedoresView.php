@@ -51,6 +51,14 @@
                         <input type="text" class="form-control" id="razon_social" required>
                     </div>
                     <div class="form-group">
+                        <label>Tipo de persona</label>
+                        <select class="form-control" id="tipo_persona" required>
+                            <option value="">Selecciona...</option>
+                            <option value="fisica">Física</option>
+                            <option value="moral">Moral</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label>RFC</label>
                         <input type="text" class="form-control" id="rfc" required>
                     </div>
@@ -102,6 +110,14 @@
                     <div class="form-group">
                         <label>Nombre del Proveedor</label>
                         <input type="text" class="form-control" id="edit_nombre_proveedor" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de persona</label>
+                        <select class="form-control" id="edit_tipo_persona" required>
+                            <option value="">Selecciona...</option>
+                            <option value="fisica">Física</option>
+                            <option value="moral">Moral</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Representante Legal</label>
@@ -224,6 +240,7 @@ function guardarProveedor()
     const datosProveedor = 
     {
         razon_social:        document.getElementById('razon_social').value,
+        tipo_persona:        document.getElementById('tipo_persona').value,
         rfc:                 document.getElementById('rfc').value,
         representante_legal: document.getElementById('representante_legal').value,
         domicilio_fiscal:    document.getElementById('domicilio_fiscal').value,
@@ -301,8 +318,11 @@ function eliminarProveedor(id)
 }
 function editarProveedor(proveedor)
 {
+    // "?? ''" evita que un valor NULL en la base de datos se convierta
+    // en el texto literal "null" dentro del campo (lo que pasaba antes).
     document.getElementById('edit_id')                  .value = proveedor.id;
     document.getElementById('edit_nombre_proveedor')    .value = proveedor.razon_social ?? '';
+    document.getElementById('edit_tipo_persona')        .value = proveedor.tipo_persona ?? '';
     document.getElementById('edit_representante_legal') .value = proveedor.representante_legal ?? '';
     document.getElementById('edit_rfc_proveedor')       .value = proveedor.rfc ?? '';
     document.getElementById('edit_actividad_economica') .value = proveedor.actividad_economica ?? '';
@@ -314,14 +334,20 @@ function editarProveedor(proveedor)
     $('#modalEditarProveedor').modal('show');
 }
 
-// fetch
+// fech
 document.getElementById('btnActualizar').addEventListener('click', function() 
 {
     const id = document.getElementById('edit_id').value;
-
+    
+    // Los nombres de estas llaves deben ser EXACTAMENTE los de
+    // ProveedoresModel::$allowedFields (razon_social, rfc, ...), porque el
+    // modelo descarta en silencio cualquier llave que no reconozca. Antes
+    // decía "nombre_proveedor" y "rfc_proveedor", que no existen ahí, así
+    // que esos dos datos nunca se actualizaban.
     const datosActualizados =
     {
         razon_social:        document.getElementById('edit_nombre_proveedor').value,
+        tipo_persona:        document.getElementById('edit_tipo_persona').value,
         representante_legal: document.getElementById('edit_representante_legal').value,
         rfc:                 document.getElementById('edit_rfc_proveedor').value,
         actividad_economica: document.getElementById('edit_actividad_economica').value,
