@@ -44,10 +44,6 @@
                             <tr>
                                 <td><?= esc($tipo['nombre']) ?></td>
                                 <td>
-                                    <!-- Son las dos piezas fijas del folio real para este tipo -->
-                                    <!-- (ej. "TEM/CAS" y "CP" en TEM/CAS/FORTAMUN/CP-002/2026). -->
-                                    <!-- El consecutivo y el año se calculan solos; la fuente de -->
-                                    <!-- financiamiento se elige al crear cada contrato. -->
                                     <form method="POST" action="<?= site_url('tipos-contrato/' . $tipo['id'] . '/folio') ?>" class="form-inline">
                                         <input type="text" name="prefijo_fijo" class="form-control form-control-sm mr-1 mb-1"
                                             style="width: 100px;" placeholder="TEM/CAS"
@@ -67,9 +63,7 @@
                                         <span class="text-muted">— sin plantilla —</span>
                                     <?php endif; ?>
 
-                                    <!-- Reemplazar el archivo SIN borrar el tipo de contrato: el input -->
-                                    <!-- de archivo se manda solo (onchange) en cuanto se elige uno, no -->
-                                    <!-- hace falta un botón "Guardar" aparte para esto. -->
+                                   
                                     <form method="POST" action="<?= site_url('tipos-contrato/' . $tipo['id'] . '/plantilla') ?>"
                                         enctype="multipart/form-data" class="mt-1">
                                         <input type="file" name="plantilla" accept=".docx,.doc,.xlsx,.xls"

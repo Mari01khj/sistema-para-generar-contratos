@@ -157,19 +157,33 @@ class GeneradorPdfContrato
         set_time_limit(60);
 
         if (! $this->convertirAPdfConOffice($rutaDocumentoLleno, $rutaPdf, $extension)) {
-            unlink($rutaDocumentoLleno);
+            // @: si el archivo quedó bloqueado (ej. todavía lo tiene abierto
+            // algún proceso de Office), que no pueda borrarse no debe tapar
+            // el verdadero motivo de la falla con un error de PHP distinto.
+            if (is_file($rutaDocumentoLleno)) {
+                @unlink($rutaDocumentoLleno);
+            }
             throw new RuntimeException(
                 'No se pudo convertir el documento a PDF. Revisa que Microsoft '
                 . 'Word/Excel estén instalados en esta computadora y que la '
                 . 'extensión "com_dotnet" de PHP esté activa (extension=com_dotnet '
                 . 'en el php.ini de Apache).'
+                . ($this->ultimoErrorConversion !== '' ? ' Detalle técnico: ' . $this->ultimoErrorConversion : '')
             );
         }
 
-        unlink($rutaDocumentoLleno);
+        if (is_file($rutaDocumentoLleno)) {
+            @unlink($rutaDocumentoLleno);
+        }
 
         return $rutaPdf;
     }
+
+    /**
+     * Guarda el mensaje real de la última conversión fallida, para poder
+     * mostrarlo en vez del genérico "no se pudo convertir" (ver generar()).
+     */
+    private string $ultimoErrorConversion = '';
 
     /**
      * Convierte el documento a PDF usando Word/Excel reales via COM (solo
@@ -177,32 +191,93 @@ class GeneradorPdfContrato
      */
     private function convertirAPdfConOffice(string $rutaDocumento, string $rutaPdfDestino, string $extension): bool
     {
+        $this->ultimoErrorConversion = '';
+
         if (! class_exists('COM')) {
+            $this->ultimoErrorConversion = 'La clase COM de PHP no está disponible '
+                . '(extension=com_dotnet no está activa en el php.ini).';
             return false;
         }
 
-        $rutaDocumentoAbs = str_replace('/', '\\', realpath($rutaDocumento));
+        $rutaDocumentoReal = realpath($rutaDocumento);
+        if ($rutaDocumentoReal === false) {
+            $this->ultimoErrorConversion = 'No se encontró el archivo ya lleno en "' . $rutaDocumento . '" '
+                . '(realpath() no lo encontró).';
+            return false;
+        }
+
+        $rutaDocumentoAbs = str_replace('/', '\\', $rutaDocumentoReal);
         $rutaPdfAbs        = str_replace('/', '\\', $rutaPdfDestino);
+
+        // Si Open() o SaveAs()/ExportAsFixedFormat() truenan a la mitad,
+        // SIN este try/finally nunca se llega a Quit(): Word/Excel se
+        // queda abierto en segundo plano con el archivo .docx/.xlsx
+        // detenido (bloqueado), y el unlink() de generar() justo después
+        // truena con "Resource temporarily unavailable" — un error de
+        // Windows que tapa el error real de la conversión. Por eso
+        // Quit() va en finally: pase lo que pase, Word/Excel se cierra
+        // antes de salir de esta función.
+        $app = null;
+
+        // Cada paso se marca con una etiqueta ("al abrir", "al guardar
+        // como PDF", "al cerrar"), porque "type mismatch" solo no dice
+        // cuál de las llamadas a Word/Excel fue la que realmente falló.
+        $paso = 'al iniciar Word/Excel';
 
         try {
             if ($extension === 'docx') {
-                $word = new \COM('Word.Application');
-                $word->Visible = false;
-                $documento = $word->Documents->Open($rutaDocumentoAbs);
-                $documento->SaveAs($rutaPdfAbs, 17); // 17 = wdFormatPDF
-                $documento->Close(false);
-                $word->Quit();
+                $app = new \COM('Word.Application');
+                $app->Visible = false;
+
+                $paso = 'al abrir el documento';
+                $documento = $app->Documents->Open($rutaDocumentoAbs);
+
+                $paso = 'al guardar como PDF';
+                // SaveAs($ruta, 17) truena con "type mismatch" porque
+                // SaveAs tiene muchos parámetros opcionales con tipos
+                // muy específicos y la llamada posicional desde PHP no
+                // siempre los acomoda bien. ExportAsFixedFormat() es el
+                // método que Word trae hecho justo para exportar a PDF
+                // (no para "guardar como" en general), con solo 2
+                // parámetros obligatorios: es el mismo que ya usamos con
+                // Excel, y ahí sí funciona sin problema.
+                $documento->ExportAsFixedFormat($rutaPdfAbs, 17); // 17 = wdExportFormatPDF
+
+                $paso = 'al cerrar el documento';
+                // A diferencia de Excel, en Word el parametro "guardar
+                // cambios" de Close() es del tipo WdSaveOptions (un
+                // numero: 0/-1/-2), no un booleano real. Pasarle un
+                // false de PHP directo revienta con "type mismatch".
+                $documento->Close(0); // 0 = wdDoNotSaveChanges
             } else {
-                $excel = new \COM('Excel.Application');
-                $excel->Visible = false;
-                $excel->DisplayAlerts = false;
-                $libro = $excel->Workbooks->Open($rutaDocumentoAbs);
+                $app = new \COM('Excel.Application');
+                $app->Visible = false;
+                $app->DisplayAlerts = false;
+
+                $paso = 'al abrir el libro';
+                $libro = $app->Workbooks->Open($rutaDocumentoAbs);
+
+                $paso = 'al exportar como PDF';
                 $libro->ExportAsFixedFormat(0, $rutaPdfAbs); // 0 = xlTypePDF
+
+                $paso = 'al cerrar el libro';
                 $libro->Close(false);
-                $excel->Quit();
             }
         } catch (\Throwable $e) {
+            // Antes este error se tiraba silenciosamente. Se guarda aquí
+            // para que generar() lo pueda mostrar y así ya no haya que
+            // adivinar por qué falló la conversión.
+            $this->ultimoErrorConversion = $paso . ': ' . $e->getMessage();
             return false;
+        } finally {
+            if ($app !== null) {
+                try {
+                    $app->Quit();
+                } catch (\Throwable $e) {
+                    // si ni siquiera esto funciona, ya no hay nada más que
+                    // hacer aquí; seguir no sirve de nada.
+                }
+            }
         }
 
         return is_file($rutaPdfDestino);
@@ -218,29 +293,132 @@ class GeneradorPdfContrato
         string $carpetaTemporal,
         string $nombreBase
     ): string {
-        $tp = new TemplateProcessor($rutaPlantilla);
+        // Algunos machotes traen "cuadros de texto" de Word (controles de
+        // contenido / content controls, ej. casillas en amarillo para
+        // llenar a mano) alrededor de algún ${marcador}. PhpWord, al abrir
+        // el archivo, intenta recomponer marcadores partidos en varias
+        // piezas de texto y a veces borra la etiqueta de apertura de ese
+        // cuadro sin borrar la de cierre, dejando un .docx que Word
+        // considera corrupto al convertirlo a PDF. Aplanarlos (quitar el
+        // cuadro y dejar solo su texto) antes de que PhpWord toque el
+        // archivo evita el problema. No se tocan los campos nativos de
+        // Word (como "Página X de Y"), solo los cuadros de texto sueltos.
+        $rutaPlantillaAplanada = $this->aplanarControlesDeContenido($rutaPlantilla);
 
-        // si el marcador no esta no ocurre error
-        foreach ($valores as $nombrePlaceholder => $valorReal) {
-            $tp->setValue($nombrePlaceholder, (string) $valorReal);
-        }
         try {
-            // cloneRowAndSetValues(): 1.encuentra la fila de la tabla que tiene y la duplica una vez por cada partida,
-            // 2. llena cada copia con los valores de su propia partida
-            $tp->cloneRowAndSetValues('partida', $filasPartidas);
-        } catch (\Exception $e) {
-            throw new RuntimeException(
-                'La plantilla de este tipo de contrato no tiene preparada la '
-                . 'tabla de Partidas (debe tener una fila con el texto '
-                . '"${partida}" dentro de una tabla). Revisa el Word y vuelve '
-                . 'a intentar.'
-            );
+            $tp = new TemplateProcessor($rutaPlantillaAplanada);
+
+            // si el marcador no esta no ocurre error
+            foreach ($valores as $nombrePlaceholder => $valorReal) {
+                $tp->setValue($nombrePlaceholder, (string) $valorReal);
+            }
+            try {
+                // cloneRowAndSetValues(): 1.encuentra la fila de la tabla que tiene y la duplica una vez por cada partida,
+                // 2. llena cada copia con los valores de su propia partida
+                $tp->cloneRowAndSetValues('partida', $filasPartidas);
+            } catch (\Exception $e) {
+                throw new RuntimeException(
+                    'La plantilla de este tipo de contrato no tiene preparada la '
+                    . 'tabla de Partidas (debe tener una fila con el texto '
+                    . '"${partida}" dentro de una tabla). Revisa el Word y vuelve '
+                    . 'a intentar.'
+                );
+            }
+
+            $rutaDocxLleno = $carpetaTemporal . '/' . $nombreBase . '.docx';
+            $tp->saveAs($rutaDocxLleno);
+        } finally {
+            // la copia aplanada es solo de trabajo, nunca se guarda
+            if (is_file($rutaPlantillaAplanada)) {
+                unlink($rutaPlantillaAplanada);
+            }
         }
 
-        $rutaDocxLleno = $carpetaTemporal . '/' . $nombreBase . '.docx';
-        $tp->saveAs($rutaDocxLleno);
+        // cloneRowAndSetValues() duplica la fila de la tabla de partidas tal
+        // cual, sin tocar los identificadores internos w14:paraId/w14:textId
+        // de cada párrafo (son para el control de cambios de Word, no para
+        // el contenido). Si el machote tiene 2+ partidas, esos IDs quedan
+        // repetidos en varias filas, y Word rechaza el archivo como
+        // "corrupto" al abrirlo por automatización (COM). Son opcionales:
+        // quitarlos no afecta el contenido ni el formato del documento.
+        $this->quitarIdsDuplicadosDeParrafos($rutaDocxLleno);
 
         return $rutaDocxLleno;
+    }
+
+    /**
+     * Quita los "cuadros de texto" (controles de contenido / <w:sdt>) de un
+     * machote de Word y regresa la ruta de una COPIA nueva ya sin ellos
+     * (nunca toca el archivo original). Se deja intacto el contenido de
+     * adentro del cuadro, solo se quita el cuadro en sí; los campos nativos
+     * de Word (como "Página X de Y" en el pie de página) no se tocan. Ver
+     * el comentario en llenarPlantillaWord() para el porqué.
+     */
+    private function aplanarControlesDeContenido(string $rutaPlantillaOriginal): string
+    {
+        $rutaTemp = tempnam(sys_get_temp_dir(), 'machote_') . '.docx';
+        copy($rutaPlantillaOriginal, $rutaTemp);
+
+        $zip = new \ZipArchive();
+        if ($zip->open($rutaTemp) !== true) {
+            return $rutaTemp;
+        }
+
+        $xml = $zip->getFromName('word/document.xml');
+        if ($xml !== false) {
+            $dom = new \DOMDocument();
+            $dom->preserveWhiteSpace = true;
+            if (@$dom->loadXML($xml)) {
+                $xpath = new \DOMXPath($dom);
+                $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
+
+                foreach (iterator_to_array($xpath->query('//w:sdt')) as $sdt) {
+                    // Los campos nativos de Word (num. de pagina, fecha
+                    // automatica, etc.) sí son necesarios: se dejan intactos.
+                    if ($xpath->query('.//w:docPartGallery', $sdt)->length > 0) {
+                        continue;
+                    }
+
+                    $sdtContent = $xpath->query('./w:sdtContent', $sdt)->item(0);
+                    if (! $sdtContent) {
+                        continue;
+                    }
+
+                    while ($sdtContent->firstChild) {
+                        $sdt->parentNode->insertBefore($sdtContent->firstChild, $sdt);
+                    }
+                    $sdt->parentNode->removeChild($sdt);
+                }
+
+                $zip->addFromString('word/document.xml', $dom->saveXML($dom->documentElement));
+            }
+        }
+
+        $zip->close();
+
+        return $rutaTemp;
+    }
+
+    /**
+     * Quita los atributos w14:paraId/w14:textId del documento ya guardado
+     * (ver el comentario en llenarPlantillaWord()). Se hace directamente
+     * sobre el .docx ya guardado porque TemplateProcessor no expone una
+     * forma de tocar su XML interno antes de saveAs().
+     */
+    private function quitarIdsDuplicadosDeParrafos(string $rutaDocx): void
+    {
+        $zip = new \ZipArchive();
+        if ($zip->open($rutaDocx) !== true) {
+            return;
+        }
+
+        $xml = $zip->getFromName('word/document.xml');
+        if ($xml !== false) {
+            $xmlLimpio = preg_replace('/ w14:(paraId|textId)="[0-9A-Fa-f]+"/', '', $xml);
+            $zip->addFromString('word/document.xml', $xmlLimpio);
+        }
+
+        $zip->close();
     }
 
     /**
