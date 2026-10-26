@@ -8,11 +8,14 @@
         <h1 class="h3 mb-0 text-gray-800"><?= esc($contrato['folio']) ?></h1>
     </div>
     <div>
-        <!-- Un simple <a href>, no un <form>, porque exportar el PDF no -->
-        <!-- cambia nada en la base de datos (es un GET de solo lectura), -->
-        <!-- a diferencia de "Eliminar" de abajo. -->
-        <a href="<?= site_url('contratos/' . $contrato['id'] . '/pdf') ?>" class="btn btn-success">
-            <i class="fas fa-file-pdf"></i> Exportar PDF
+        <!-- Un simple <a href>, no un <form>, porque descargar el -->
+        <!-- documento no cambia nada en la base de datos (es un GET de -->
+        <!-- solo lectura), a diferencia de "Eliminar" de abajo. Ya no se -->
+        <!-- exporta a PDF: se descarga el Word/Excel ya lleno, con sus -->
+        <!-- cuadros amarillos intactos, para revisarlo/corregirlo en -->
+        <!-- Office antes de guardarlo como PDF. -->
+        <a href="<?= site_url('contratos/' . $contrato['id'] . '/documento') ?>" class="btn btn-success">
+            <i class="fas fa-file-word"></i> Descargar documento
         </a>
         <a href="<?= site_url('contratos/' . $contrato['id'] . '/editar') ?>" class="btn btn-primary">
             <i class="fas fa-edit"></i> Editar
@@ -123,11 +126,8 @@
             </table>
         </div>
 
-        <!-- Estos totales SÍ son los oficiales: vienen de la columna -->
-        <!-- subtotal/iva/total de la tabla contratos, que el servidor -->
-        <!-- recalculó y guardó al crear/editar (nunca se confía en lo que -->
-        <!-- mande el navegador). A diferencia de la vista previa del -->
-        <!-- formulario, esto no se vuelve a calcular en el navegador. -->
+        <!-- Estos totales SÍ son los oficiales -->
+
         <table class="table table-sm mt-3" style="max-width: 320px; margin-left: auto;">
             <tr>
                 <th>Subtotal</th>

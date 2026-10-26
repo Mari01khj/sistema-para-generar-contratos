@@ -1,40 +1,3 @@
-<?php
-/**
- * Partial compartido por contratos/crear.php y contratos/editar.php.
- *
- * Dibuja el formulario completo de un contrato: datos generales, campos
- * dinámicos del tipo y la tabla de Partidas. Está en un solo archivo para
- * no tener que mantener la misma tabla de Partidas (con su JavaScript de
- * agregar/quitar filas y recalcular totales) copiada y pegada en dos
- * vistas: cualquier corrección se hace aquí una sola vez.
- *
- * Variables que espera recibir quien lo incluya (con <?= $this->include(...) ?>
- * o view()):
- *
- *   $accionUrl          URL a la que se envía el POST (crear o actualizar).
- *   $tipoContrato        El tipo de contrato ya elegido (array).
- *   $proveedores, $areas  Catálogos activos, para los <select>.
- *   $camposDinamicos      Campos de este tipo (ya filtrados, sin los reservados).
- *   $opcionesListas        Opciones para los campos tipo "lista".
- *   $filasBienesPrevias    Partidas a precargar en la tabla.
- *   $valoresFijos (opcional)  ['proveedor_id'=>, 'descripcion_corta'=>, ...]
- *                             para precargar "Datos generales" al editar.
- *                             En crear.php simplemente no se manda (queda []).
- *   $valoresCampos (opcional) [campo_id => valor] para precargar los campos
- *                             dinámicos al editar. En crear.php no se manda.
- *   $textoBoton (opcional)    Texto del botón de guardar.
- *
- * En TODOS los campos, el valor que haya en old() (lo último que el
- * usuario escribió, si venimos de un error de validación) SIEMPRE gana
- * sobre lo que venga en $valoresFijos/$valoresCampos (lo que ya había
- * guardado en la base de datos). Así, si el usuario corrige un error y
- * reenvía, no pierde lo que acababa de escribir en los demás campos.
- */
-
-$valoresFijos  ??= [];
-$valoresCampos ??= [];
-$textoBoton    ??= 'Guardar contrato';
-?>
 
 <form method="POST" action="<?= $accionUrl ?>" id="formContrato">
     <input type="hidden" name="tipo_contrato_id" value="<?= $tipoContrato['id'] ?>">
@@ -80,11 +43,7 @@ $textoBoton    ??= 'Guardar contrato';
             </div>
 
             <?php if (isset($fuentes)): ?>
-                <!-- La fuente de financiamiento solo se elige al CREAR el -->
-                <!-- contrato: el folio ya se arma con ella, así que cambiarla -->
-                <!-- después dejaría el folio real sin coincidir con lo que -->
-                <!-- dice. Por eso en editar.php esto no aparece como <select>, -->
-                <!-- solo como texto informativo (ver editar.php). -->
+    
                 <div class="form-group">
                     <label>Fuente de financiamiento <span class="text-danger">*</span></label>
                     <?php $fuentePrevia = old('fuente_financiamiento_id'); ?>
@@ -177,11 +136,7 @@ $textoBoton    ??= 'Guardar contrato';
         </div>
     <?php endif; ?>
 
-    <!-- Partidas: cada renglón es un bien/servicio del contrato (descripción detallada, -->
-    <!-- unidad de medida, cantidad, precio unitario). El importe de cada renglón y los -->
-    <!-- totales se recalculan aquí solo para que el usuario los vea; el servidor vuelve a -->
-    <!-- calcular todo antes de guardar, así que estos números en pantalla no son los que -->
-    <!-- deciden lo que se guarda. -->
+   
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Partidas</h6>
@@ -209,12 +164,14 @@ $textoBoton    ??= 'Guardar contrato';
                             <tr class="fila-partida">
                                 <td class="text-center numero-fila"><?= $i + 1 ?></td>
                                 <td>
-                                    <input type="text" name="bienes[<?= $i ?>][descripcion]" class="form-control"
-                                        value="<?= esc($fila['descripcion'] ?? '') ?>" placeholder="Ej. Camisa tipo polo, talla M, bordado logo">
+                                    <input type="text" name="bienes[<?= $i ?>][descripcion]" class="form-control campo-descripcion"
+                                        value="<?= esc($fila['descripcion'] ?? '') ?>" placeholder="Ej. Camisa tipo polo, talla M, bordado logo"
+                                        autocomplete="off">
                                 </td>
                                 <td>
-                                    <input type="text" name="bienes[<?= $i ?>][unidad_medida]" class="form-control"
-                                        value="<?= esc($fila['unidad_medida'] ?? '') ?>" placeholder="Pieza">
+                                    <input type="text" name="bienes[<?= $i ?>][unidad_medida]" class="form-control campo-unidad"
+                                        value="<?= esc($fila['unidad_medida'] ?? '') ?>" placeholder="Pieza"
+                                        list="listaUnidadesMedida" autocomplete="off">
                                 </td>
                                 <td>
                                     <input type="text" name="bienes[<?= $i ?>][marca]" class="form-control"
@@ -241,8 +198,8 @@ $textoBoton    ??= 'Guardar contrato';
             <template id="plantillaFilaPartida">
                 <tr class="fila-partida">
                     <td class="text-center numero-fila">0</td>
-                    <td><input type="text" name="bienes[__i__][descripcion]" class="form-control" placeholder="Ej. Camisa tipo polo, talla M, bordado logo"></td>
-                    <td><input type="text" name="bienes[__i__][unidad_medida]" class="form-control" placeholder="Pieza"></td>
+                    <td><input type="text" name="bienes[__i__][descripcion]" class="form-control campo-descripcion" placeholder="Ej. Camisa tipo polo, talla M, bordado logo" autocomplete="off"></td>
+                    <td><input type="text" name="bienes[__i__][unidad_medida]" class="form-control campo-unidad" placeholder="Pieza" list="listaUnidadesMedida" autocomplete="off"></td>
                     <td><input type="text" name="bienes[__i__][marca]" class="form-control"></td>
                     <td><input type="number" step="any" min="0" name="bienes[__i__][cantidad]" class="form-control campo-cantidad"></td>
                     <td><input type="number" step="any" min="0" name="bienes[__i__][precio_unitario]" class="form-control campo-precio"></td>
@@ -250,6 +207,9 @@ $textoBoton    ??= 'Guardar contrato';
                     <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger btnQuitarFila"><i class="fas fa-times"></i></button></td>
                 </tr>
             </template>
+
+            
+            <datalist id="listaUnidadesMedida"></datalist>
 
             <table class="table table-sm mt-3" style="max-width: 320px; margin-left: auto;">
                 <tr>
@@ -312,7 +272,9 @@ $textoBoton    ??= 'Guardar contrato';
         var html = plantilla.innerHTML.replace(/__i__/g, contador);
         var contenedorTemporal = document.createElement('tbody');
         contenedorTemporal.innerHTML = html.trim();
-        cuerpo.appendChild(contenedorTemporal.firstElementChild);
+        var filaNueva = contenedorTemporal.firstElementChild;
+        cuerpo.appendChild(filaNueva);
+        prepararAutocompletarBien(filaNueva);
         contador++;
         recalcular();
     }
@@ -322,6 +284,87 @@ $textoBoton    ??= 'Guardar contrato';
             recalcular();
         }
     });
+
+    var datalistUnidades = document.getElementById('listaUnidadesMedida');
+
+    fetch('<?= base_url('unidades-medida/activas') ?>', { headers: { 'Accept': 'application/json' } })
+        .then(function (resp) { return resp.json(); })
+        .then(function (nombres) {
+            nombres.forEach(function (nombre) {
+                var opcion = document.createElement('option');
+                opcion.value = nombre;
+                datalistUnidades.appendChild(opcion);
+            });
+        })
+        .catch(function (error) { console.error('No se pudieron cargar las unidades de medida:', error); });
+
+    var uidDatalist = 0;
+
+    function prepararAutocompletarBien(fila) {
+        var campoDescripcion = fila.querySelector('.campo-descripcion');
+        if (!campoDescripcion) return;
+
+        uidDatalist++;
+        var idDatalist = 'dl-bien-' + uidDatalist;
+        var datalistFila = document.createElement('datalist');
+        datalistFila.id = idDatalist;
+
+        campoDescripcion.parentNode.appendChild(datalistFila);
+        campoDescripcion.setAttribute('list', idDatalist);
+
+        //llenado de la tabla segun lo seleccionado
+        var catalogoPorNombre = {};
+        var temporizador = null;
+
+        campoDescripcion.addEventListener('input', function () {
+            var texto = campoDescripcion.value.trim();
+
+         
+            if (catalogoPorNombre[texto]) {
+                var datos = catalogoPorNombre[texto];
+                if (datos.unidad) {
+                    fila.querySelector('.campo-unidad').value = datos.unidad;
+                }
+                if (datos.precio !== null && datos.precio !== undefined) {
+                    fila.querySelector('.campo-precio').value = datos.precio;
+                }
+                recalcular();
+                return;
+            }
+
+            clearTimeout(temporizador);
+            if (texto.length < 3) {
+                datalistFila.innerHTML = '';
+                return;
+            }
+
+            // Debounce de 300ms
+
+            temporizador = setTimeout(function () 
+            {
+                fetch('<?= base_url('bienes-servicios/buscar') ?>?q=' + encodeURIComponent(texto), 
+                {
+                    headers: { 'Accept': 'application/json' }
+                })
+                .then(function (resp) { return resp.json(); })
+                .then(function (resultados) {
+                    datalistFila.innerHTML = '';
+                    catalogoPorNombre = {};
+
+                    resultados.forEach(function (item) 
+                    {
+                        var opcion = document.createElement('option');
+                        opcion.value = item.nombre;
+                        datalistFila.appendChild(opcion);
+                        catalogoPorNombre[item.nombre] = { unidad: item.unidad_medida, precio: item.precio };
+                    });
+                })
+                .catch(function (error) { console.error('Error buscando en el catálogo:', error); });
+            }, 300);
+        });
+    }
+
+    cuerpo.querySelectorAll('.fila-partida').forEach(prepararAutocompletarBien);
 
     cuerpo.addEventListener('click', function (e) {
         var boton = e.target.closest('.btnQuitarFila');

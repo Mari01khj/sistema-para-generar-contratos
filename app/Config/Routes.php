@@ -24,10 +24,7 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
         {
             $routes->get('/', 'TipoContratoController::gestion', ['as' => 'tiposContratoGestion']);
             $routes->post('crear', 'TipoContratoController::create');
-            // Reemplazar SOLO el archivo de la plantilla de un tipo que ya
-            // existe, sin tocar sus campos dinámicos ni los contratos que
-            // ya la usaron (eso es lo que "crear" + "borrar y recrear" no
-            // puede hacer, por las llaves foráneas).
+      
             $routes->post('(:num)/plantilla', 'TipoContratoController::actualizarPlantilla/$1');
             $routes->post('(:num)/folio', 'TipoContratoController::actualizarFolio/$1');
 
@@ -72,6 +69,21 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
             $routes->post('eliminar/(:num)', 'FuentesFinanciamientoController::delete/$1');
         });
 
+        $routes->group('unidades-medida', static function ($routes)
+        {
+            $routes->get('/', 'UnidadesMedidaController::index');
+            $routes->get('list', 'UnidadesMedidaController::listar');
+
+            $routes->post('crear', 'UnidadesMedidaController::create');
+            $routes->post('eliminar/(:num)', 'UnidadesMedidaController::delete/$1');
+        });
+
+        $routes->group('bienes-servicios', static function ($routes)
+        {
+            $routes->get('/', 'BienesServiciosController::index');
+            $routes->get('list', 'BienesServiciosController::listar');
+        });
+
         $routes->group('usuarios', static function ($routes) 
         {
             $routes->get('/', 'UserController::index');
@@ -88,21 +100,23 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
         $routes->get('perfil', 'OperadorController::misDatos');
         $routes->post('operador/actualizar-datos', 'OperadorController::actualizarDatos');
     });
-    
+   
+    $routes->group('', ['filter' => 'roleFilter:1,2'], static function ($routes)
+    {
+        $routes->get('bienes-servicios/buscar', 'BienesServiciosController::buscar');
+        $routes->get('unidades-medida/activas', 'UnidadesMedidaController::activas');
+    });
+
     $routes->group('contratos', ['filter' => 'roleFilter:1,2'], static function ($routes)
     {
         $routes->get('/', 'ContratosController::index');
         $routes->get('nuevo', 'ContratosController::nuevo');
         $routes->post('crear', 'ContratosController::create');
 
-        // Paso 4: ver/editar/eliminar un contrato ya guardado.
-        // (:num) captura el id del contrato y se lo pasa al método como
-        // primer parámetro (el "$1" de cada ruta).
         $routes->get('(:num)', 'ContratosController::ver/$1', ['as' => 'contratoVer']);
         $routes->get('(:num)/editar', 'ContratosController::editar/$1', ['as' => 'contratoEditar']);
-        // Paso 6: descargar el PDF del contrato (GET porque no cambia nada
-        // en la base de datos, solo genera y entrega un archivo).
-        $routes->get('(:num)/pdf', 'ContratosController::exportarPdf/$1', ['as' => 'contratoPdf']);
+       
+        $routes->get('(:num)/documento', 'ContratosController::exportarDocumento/$1', ['as' => 'contratoDocumento']);
         $routes->post('(:num)/actualizar', 'ContratosController::actualizar/$1');
         $routes->post('(:num)/eliminar', 'ContratosController::eliminar/$1');
     });
