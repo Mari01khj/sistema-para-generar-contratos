@@ -1,3 +1,12 @@
+<?php
+/**
+ * Partial compartido 
+ */
+
+$valoresFijos  ??= [];
+$valoresCampos ??= [];
+$textoBoton    ??= 'Guardar contrato';
+?>
 
 <form method="POST" action="<?= $accionUrl ?>" id="formContrato">
     <input type="hidden" name="tipo_contrato_id" value="<?= $tipoContrato['id'] ?>">
@@ -39,11 +48,20 @@
                 <input type="text" name="descripcion_corta" class="form-control" maxlength="255"
                     value="<?= esc(old('descripcion_corta') ?? ($valoresFijos['descripcion_corta'] ?? '')) ?>"
                     placeholder="Ej. Adquisición de uniformes del Ayuntamiento" required>
-                <small class="form-text text-muted">Resumen del objeto del contrato. Los detalles de cada pieza van en la tabla de Partidas, abajo.</small>
+                <small class="form-text text-muted">Resumen del objeto del contrato.</small>
+            </div>
+
+            <div class="form-group">
+                <label>Nombre del bien </label>
+                <textarea name="nombre_bien" class="form-control" rows="3"
+                    placeholder='Ej. "EL PROVEEDOR" SUMINISTRE A "EL MUNICIPIO" CONCRETO HIDRÁULICO PREMEZCLADO, DESTINADO A...'
+                ><?= esc(old('nombre_bien') ?? ($valoresFijos['nombre_bien'] ?? '')) ?></textarea>
+                <small class="form-text text-muted">nombre adicional opcional.</small>
             </div>
 
             <?php if (isset($fuentes)): ?>
-    
+                <!-- La fuente de financiamiento solo se elige al CREAR el -->
+                <!-- contrato y el folio ya se arma con ella-->
                 <div class="form-group">
                     <label>Fuente de financiamiento <span class="text-danger">*</span></label>
                     <?php $fuentePrevia = old('fuente_financiamiento_id'); ?>
@@ -61,7 +79,8 @@
             <div class="form-row">
                 <div class="form-group col-md-4">
                     <label>Fecha de entrega</label>
-                    <input type="date" name="fecha_entrega" class="form-control"
+                   
+                    <input type="text" name="fecha_entrega" class="form-control"
                         value="<?= esc(old('fecha_entrega') ?? ($valoresFijos['fecha_entrega'] ?? '')) ?>">
                 </div>
                 <div class="form-group col-md-4">
@@ -99,7 +118,6 @@
                         <?php
                             // old() gana siempre; si no hay old(), se usa el
                             // valor ya guardado que venga en $valoresCampos
-                            // (editar.php lo manda, crear.php lo deja vacío).
                             $valorPrevio = old('campos.' . $campo['id']) ?? ($valoresCampos[$campo['id']] ?? '');
                         ?>
 
@@ -136,7 +154,7 @@
         </div>
     <?php endif; ?>
 
-   
+    <!-- Partidas: calculo que se ve en la vista -->
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Partidas</h6>
@@ -208,7 +226,6 @@
                 </tr>
             </template>
 
-            
             <datalist id="listaUnidadesMedida"></datalist>
 
             <table class="table table-sm mt-3" style="max-width: 320px; margin-left: auto;">
@@ -285,6 +302,7 @@
         }
     });
 
+   
     var datalistUnidades = document.getElementById('listaUnidadesMedida');
 
     fetch('<?= base_url('unidades-medida/activas') ?>', { headers: { 'Accept': 'application/json' } })
@@ -308,18 +326,16 @@
         var idDatalist = 'dl-bien-' + uidDatalist;
         var datalistFila = document.createElement('datalist');
         datalistFila.id = idDatalist;
-
         campoDescripcion.parentNode.appendChild(datalistFila);
         campoDescripcion.setAttribute('list', idDatalist);
 
-        //llenado de la tabla segun lo seleccionado
+        
         var catalogoPorNombre = {};
         var temporizador = null;
 
         campoDescripcion.addEventListener('input', function () {
             var texto = campoDescripcion.value.trim();
 
-         
             if (catalogoPorNombre[texto]) {
                 var datos = catalogoPorNombre[texto];
                 if (datos.unidad) {
@@ -337,13 +353,9 @@
                 datalistFila.innerHTML = '';
                 return;
             }
-
-            // Debounce de 300ms
-
-            temporizador = setTimeout(function () 
-            {
-                fetch('<?= base_url('bienes-servicios/buscar') ?>?q=' + encodeURIComponent(texto), 
-                {
+.
+            temporizador = setTimeout(function () {
+                fetch('<?= base_url('bienes-servicios/buscar') ?>?q=' + encodeURIComponent(texto), {
                     headers: { 'Accept': 'application/json' }
                 })
                 .then(function (resp) { return resp.json(); })
@@ -351,8 +363,7 @@
                     datalistFila.innerHTML = '';
                     catalogoPorNombre = {};
 
-                    resultados.forEach(function (item) 
-                    {
+                    resultados.forEach(function (item) {
                         var opcion = document.createElement('option');
                         opcion.value = item.nombre;
                         datalistFila.appendChild(opcion);

@@ -67,6 +67,14 @@
                         <input type="text" class="form-control" id="representante_legal" required>
                     </div>
                     <div class="form-group">
+                        <label>Folio de la credencial de elector (INE) del representante</label>
+                        <input type="text" class="form-control" id="folio_ine">
+                    </div>
+                    <div class="form-group">
+                        <label>NCI</label>
+                        <input type="text" class="form-control" id="nci">
+                    </div>
+                    <div class="form-group">
                         <label>Domicilio Fiscal</label>
                         <input type="text" class="form-control" id="domicilio_fiscal" required>
                     </div>
@@ -124,6 +132,14 @@
                         <input type="text" class="form-control" id="edit_representante_legal" required>
                     </div>
                     <div class="form-group">
+                        <label>Folio de la credencial de elector (INE) del representante</label>
+                        <input type="text" class="form-control" id="edit_folio_ine">
+                    </div>
+                    <div class="form-group">
+                        <label>NCI</label>
+                        <input type="text" class="form-control" id="edit_nci">
+                    </div>
+                    <div class="form-group">
                         <label>RFC </label>
                         <input type="text" class="form-control" id="edit_rfc_proveedor" required>
                     </div>
@@ -164,9 +180,7 @@ document.addEventListener("DOMContentLoaded", function()
         guardarProveedor();
     });
 
-    // Delegado: los botones "editar" se crean dinámicamente al recargar la
-    // tabla, así que el listener va en el tbody (que sí existe desde el
-    // inicio) y no en cada botón.
+    
     document.getElementById('tbodyProveedores').addEventListener('click', function (e) {
         const boton = e.target.closest('.btnEditarProveedor');
         if (!boton) return;
@@ -243,6 +257,8 @@ function guardarProveedor()
         tipo_persona:        document.getElementById('tipo_persona').value,
         rfc:                 document.getElementById('rfc').value,
         representante_legal: document.getElementById('representante_legal').value,
+        folio_ine:           document.getElementById('folio_ine').value,
+        nci:                 document.getElementById('nci').value,
         domicilio_fiscal:    document.getElementById('domicilio_fiscal').value,
         actividad_economica: document.getElementById('actividad_economica').value,
         correo:              document.getElementById('correo').value,
@@ -318,12 +334,12 @@ function eliminarProveedor(id)
 }
 function editarProveedor(proveedor)
 {
-    // "?? ''" evita que un valor NULL en la base de datos se convierta
-    // en el texto literal "null" dentro del campo (lo que pasaba antes).
     document.getElementById('edit_id')                  .value = proveedor.id;
     document.getElementById('edit_nombre_proveedor')    .value = proveedor.razon_social ?? '';
     document.getElementById('edit_tipo_persona')        .value = proveedor.tipo_persona ?? '';
     document.getElementById('edit_representante_legal') .value = proveedor.representante_legal ?? '';
+    document.getElementById('edit_folio_ine')            .value = proveedor.folio_ine ?? '';
+    document.getElementById('edit_nci')                  .value = proveedor.nci ?? '';
     document.getElementById('edit_rfc_proveedor')       .value = proveedor.rfc ?? '';
     document.getElementById('edit_actividad_economica') .value = proveedor.actividad_economica ?? '';
     document.getElementById('edit_domicilio_fiscal')    .value = proveedor.domicilio_fiscal ?? '';
@@ -339,16 +355,13 @@ document.getElementById('btnActualizar').addEventListener('click', function()
 {
     const id = document.getElementById('edit_id').value;
     
-    // Los nombres de estas llaves deben ser EXACTAMENTE los de
-    // ProveedoresModel::$allowedFields (razon_social, rfc, ...), porque el
-    // modelo descarta en silencio cualquier llave que no reconozca. Antes
-    // decía "nombre_proveedor" y "rfc_proveedor", que no existen ahí, así
-    // que esos dos datos nunca se actualizaban.
     const datosActualizados =
     {
         razon_social:        document.getElementById('edit_nombre_proveedor').value,
         tipo_persona:        document.getElementById('edit_tipo_persona').value,
         representante_legal: document.getElementById('edit_representante_legal').value,
+        folio_ine:           document.getElementById('edit_folio_ine').value,
+        nci:                 document.getElementById('edit_nci').value,
         rfc:                 document.getElementById('edit_rfc_proveedor').value,
         actividad_economica: document.getElementById('edit_actividad_economica').value,
         domicilio_fiscal:    document.getElementById('edit_domicilio_fiscal').value,

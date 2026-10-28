@@ -17,6 +17,8 @@ class ProveedoresModel extends Model
         'tipo_persona',
         'rfc',
         'representante_legal',
+        'folio_ine',
+        'nci',
         'domicilio_fiscal',
         'actividad_economica',
         'direccion',

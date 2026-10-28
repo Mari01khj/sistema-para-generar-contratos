@@ -75,7 +75,6 @@ class UnidadesMedidaController extends BaseController
             ]);
         }
 
-        /
         if ($this->unidadModel->delete($id)) {
             return $this->response->setStatusCode(200)->setJSON([
                 'status'  => 200,
