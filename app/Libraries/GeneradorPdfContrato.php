@@ -6,7 +6,6 @@ use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
 use PhpOffice\PhpWord\TemplateProcessor;
 
 use RuntimeException;
-
 class GeneradorPdfContrato
 {
 
@@ -15,7 +14,6 @@ class GeneradorPdfContrato
         $subtotal = (float) $contrato['subtotal'];
         $total    = (float) $contrato['total'];
 
-        
         $montoMinimo   = $total * 0.60;
         $diezImporte   = $subtotal * 0.10;
         $cincoImporte  = $subtotal * 0.05;
@@ -37,7 +35,7 @@ class GeneradorPdfContrato
             'monto_min'           => number_format($montoMinimo, 2),
             'monto_min_texto'     => $this->numeroALetras($montoMinimo),
             'diez_importe'        => number_format($diezImporte, 2),
-            'diez_omprte_texto'   => $this->numeroALetras($diezImporte),
+            'diez_importe_texto'  => $this->numeroALetras($diezImporte),
             'cinco_importe'       => number_format($cincoImporte, 2),
             'cinco_importe_texto' => $this->numeroALetras($cincoImporte),
 
@@ -46,7 +44,6 @@ class GeneradorPdfContrato
             'area_usuaria'        => $contrato['nombre_area'],
             'area_tecnica'        => $contrato['nombre_area'],
             'area_requirente'     => $contrato['nombre_area'],
-            
         ];
     }
 
@@ -72,13 +69,10 @@ class GeneradorPdfContrato
         return [
             'titular_area'  => $area['titular_area'] ?? '',
             'cargo_titular' => $area['cargo_titular'] ?? '',
-            'titular_areal' => $area['titular_area'] ?? '',
+            'titular_area' => $area['titular_area'] ?? '',
         ];
     }
 
-    /**
-
-     */
     public function generar(
         array $contrato,
         array $proveedor,
@@ -135,7 +129,6 @@ class GeneradorPdfContrato
         {
             $filasPartidas[] = [
                 'partida'              => (string) $partida['num_partida'],
-                'nombre_bien'          => $partida['descripcion'],
                 'descripcion_detallada' => $partida['descripcion'],
                 'u_medida'             => $partida['unidad_medida'],
                 'cantidad'             => $this->formatoCantidad((float) $partida['cantidad']),
@@ -146,7 +139,7 @@ class GeneradorPdfContrato
         }
 
 
-        // el doc  ya lleno se guarda aquí y se limpian después de una hora para no llenar el disco.
+        // temporal: se limpia solo despues de una hora.
         $carpetaTemporal = WRITEPATH . 'uploads/documentos_temporales';
         if (! is_dir($carpetaTemporal)) {
             mkdir($carpetaTemporal, 0775, true);
@@ -175,9 +168,7 @@ class GeneradorPdfContrato
         string $carpetaTemporal,
         string $nombreBase
     ): string {
-        // mete el "$" suelto dentro del cuadro antes de
-        // que PhpWord toque el archivo; el cuadro en sí 
-
+        // arregla "${marcador}" partido por un cuadro amarillo antes de que PhpWord lo corrompa.
         $rutaPlantillaSaneada = $this->saneaMarcadoresPartidosPorControles($rutaPlantilla);
 
         try {
@@ -188,8 +179,6 @@ class GeneradorPdfContrato
                 $tp->setValue($nombrePlaceholder, (string) $valorReal);
             }
             try {
-                // cloneRowAndSetValues(): 1.encuentra la fila de la tabla que tiene y la duplica una vez por cada partida,
-                // 2. llena cada copia con los valores de su propia partida
                 $tp->cloneRowAndSetValues('partida', $filasPartidas);
             } catch (\Exception $e) {
                 throw new RuntimeException(
@@ -209,14 +198,14 @@ class GeneradorPdfContrato
             }
         }
 
-        // duplica la fila de la tabla de partidas tal  cual, sin tocar los identificadores internos w14:paraId/w14:textId
-       
+        // quita w14:paraId/w14:textId duplicados que deja cloneRowAndSetValues.
         $this->quitarIdsDuplicadosDeParrafos($rutaDocxLleno);
 
         return $rutaDocxLleno;
     }
 
-   //saneado
+    // Copia el machote y mete el "$" suelto dentro del cuadro amarillo
+    // cuando quedó partido a la mitad por la etiqueta <w:sdt>.
     private function saneaMarcadoresPartidosPorControles(string $rutaPlantillaOriginal): string
     {
         $rutaTemp = tempnam(sys_get_temp_dir(), 'machote_') . '.docx';
@@ -236,7 +225,7 @@ class GeneradorPdfContrato
                 $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
 
                 foreach (iterator_to_array($xpath->query('//w:sdt')) as $sdt) {
-                   //exluye formatos de word
+                    // excluye campos nativos de Word (num. de pagina, etc).
                     if ($xpath->query('.//w:docPartGallery', $sdt)->length > 0) {
                         continue;
                     }
@@ -246,11 +235,14 @@ class GeneradorPdfContrato
                         continue;
                     }
 
+                    // Primer texto visible DENTRO del cuadro: ¿empieza con "{"?
                     $primerTexto = $xpath->query('.//w:t', $sdtContent)->item(0);
                     if (! $primerTexto || ! str_starts_with($primerTexto->textContent, '{')) {
                         continue;
                     }
 
+                    // Último texto visible de la run/párrafo que viene
+                    // ANTES del cuadro (fuera de él): ¿termina en "$"?
                     $runAnterior = $this->runDeTextoAnterior($sdt);
                     if (! $runAnterior) {
                         continue;
@@ -260,6 +252,9 @@ class GeneradorPdfContrato
                         continue;
                     }
 
+                    // Mueve el "$" de afuera hacia adentro del cuadro, al
+                    // inicio de su primer texto, y quita esa run si se
+                    // queda vacía (si solo tenía el "$" suelto).
                     $textoAnterior->textContent = substr($textoAnterior->textContent, 0, -1);
                     $primerTexto->textContent    = '$' . $primerTexto->textContent;
 
@@ -277,8 +272,12 @@ class GeneradorPdfContrato
         return $rutaTemp;
     }
 
- 
-    
+    /**
+     * Busca, hacia atrás a partir de $nodo, el nodo <w:r> (run) de texto
+     * más cercano que no sea el propio $nodo — saltándose nodos vacíos o
+     * sin texto visible  que pudieran estar entre medio. Regresa null si no encuentra ninguno antes de llegar al
+     * principio del párrafo.
+     */
     private function runDeTextoAnterior(\DOMNode $nodo): ?\DOMElement
     {
         $anterior = $nodo->previousSibling;
@@ -299,6 +298,8 @@ class GeneradorPdfContrato
 
     /**
      * Quita los atributos w14:paraId/w14:textId del documento ya guardado
+     *se hace directamente sobre el .docx ya guardado porque TemplateProcessor no expone una
+     * forma de tocar su XML interno antes de saveAs().
      */
     private function quitarIdsDuplicadosDeParrafos(string $rutaDocx): void
     {
@@ -376,8 +377,10 @@ class GeneradorPdfContrato
     }
 
     /**
-     * Duplica la fila ancla de la tabla de Partidas con todo y formato*/
-
+     * Duplica la fila ancla de la tabla de Partidas una vez por cada
+     * partida copiando también el formato de las celdas, y llena cada copia con los datos de su propia
+     * partida. Si no hay partidas, simplemente deja la fila ancla vacía
+     */
     private function llenarTablaPartidasExcel(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $hoja,
         int $filaAncla,
@@ -442,6 +445,7 @@ class GeneradorPdfContrato
         }
     }
 
+    // Si la celda es solo un placeholder numérico, manda el número real
     private function valorCeldaResuelto(string $textoOriginal, array $valores)
     {
         if (preg_match('/^\$\{([a-zA-Z0-9_]+)\}$/', trim($textoOriginal), $coincidencia)
@@ -476,12 +480,11 @@ class GeneradorPdfContrato
                 $valorCelda = $celda->getValue();
 
                 if (is_string($valorCelda) && str_contains($valorCelda, '${')) {
-                   
                     $celda->setValue($this->valorCeldaResuelto($valorCelda, $valores));
                     continue;
                 }
 
-            
+                // texto mixto viene como RichText.
                 if ($valorCelda instanceof \PhpOffice\PhpSpreadsheet\RichText\RichText) {
                     foreach ($valorCelda->getRichTextElements() as $elemento) {
                         $texto = $elemento->getText();
@@ -505,7 +508,7 @@ class GeneradorPdfContrato
         return $texto;
     }
 
-    /
+    // Quita los decimales solo cuando son puro 
     private function formatoCantidad(float $cantidad): string
     {
         if ($cantidad == floor($cantidad)) {
@@ -515,9 +518,7 @@ class GeneradorPdfContrato
         return number_format($cantidad, 2);
     }
 
-    /**
-     * Convierte un monto a su representacion en letras para contratos
-     */
+    /** Convierte un monto a su representacion en letras */
     private function numeroALetras(float $monto): string
     {
         $entero   = (int) floor($monto);

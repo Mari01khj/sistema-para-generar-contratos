@@ -44,6 +44,10 @@
                             <tr>
                                 <td><?= esc($tipo['nombre']) ?></td>
                                 <td>
+                                    <!-- Son las dos piezas fijas del folio real para este tipo -->
+                                    <!-- (ej. "TEM/CAS" y "CP" en TEM/CAS/FORTAMUN/CP-002/2026). -->
+                                    <!-- El consecutivo y el año se calculan solos; la fuente de -->
+                                    <!-- financiamiento se elige al crear cada contrato. -->
                                     <form method="POST" action="<?= site_url('tipos-contrato/' . $tipo['id'] . '/folio') ?>" class="form-inline">
                                         <input type="text" name="prefijo_fijo" class="form-control form-control-sm mr-1 mb-1"
                                             style="width: 100px;" placeholder="TEM/CAS"
@@ -63,7 +67,9 @@
                                         <span class="text-muted">— sin plantilla —</span>
                                     <?php endif; ?>
 
-                                   
+                                    <!-- Reemplazar el archivo SIN borrar el tipo de contrato: el input -->
+                                    <!-- de archivo se manda solo (onchange) en cuanto se elige uno, no -->
+                                    <!-- hace falta un botón "Guardar" aparte para esto. -->
                                     <form method="POST" action="<?= site_url('tipos-contrato/' . $tipo['id'] . '/plantilla') ?>"
                                         enctype="multipart/form-data" class="mt-1">
                                         <input type="file" name="plantilla" accept=".docx,.doc,.xlsx,.xls"
@@ -84,9 +90,25 @@
                                     <?= (int) ($conteoCampos[$tipo['id']] ?? 0) ?> campo(s)
                                 </td>
                                 <td>
-                                    <a href="<?= url_to('camposFormularioGestion', $tipo['id']) ?>" class="btn btn-sm btn-outline-primary">
+                                    <a href="<?= url_to('camposFormularioGestion', $tipo['id']) ?>" class="btn btn-sm btn-outline-primary mb-1">
                                         <i class="fas fa-list-ul"></i> Gestionar campos
                                     </a>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary mb-1"
+                                        data-toggle="modal" data-target="#modalEditarTipo"
+                                        data-id="<?= esc($tipo['id']) ?>" data-nombre="<?= esc($tipo['nombre'], 'attr') ?>">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </button>
+                                    <form method="POST" action="<?= site_url('tipos-contrato/' . $tipo['id'] . '/estado') ?>" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-warning mb-1">
+                                            <?= $tipo['activo'] ? 'Desactivar' : 'Activar' ?>
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="<?= site_url('tipos-contrato/' . $tipo['id'] . '/eliminar') ?>" class="d-inline"
+                                        onsubmit="return confirm('¿Eliminar este tipo de contrato? Si ya tiene contratos o campos asociados, no se podrá y habrá que desactivarlo en su lugar.');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger mb-1">
+                                            <i class="fas fa-trash"></i> Eliminar
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -140,6 +162,38 @@
         </form>
     </div>
 </div>
+
+<!-- editar nombre -->
+<div class="modal fade" id="modalEditarTipo" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <form id="formEditarTipo" method="POST" action="">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar tipo de contrato</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" name="nombre" id="editar_tipo_nombre" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+$('#modalEditarTipo').on('show.bs.modal', function (e) {
+    const boton = e.relatedTarget;
+    document.getElementById('formEditarTipo').action = '<?= site_url('tipos-contrato') ?>/' + boton.dataset.id + '/editar';
+    document.getElementById('editar_tipo_nombre').value = boton.dataset.nombre;
+});
+</script>
 
 <?php if (session()->getFlashdata('error')): ?>
     <script>document.addEventListener('DOMContentLoaded', () => $('#modalNuevoTipo').modal('show'));</script>

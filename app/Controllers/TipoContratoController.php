@@ -83,21 +83,10 @@ class TipoContratoController extends BaseController
 
     /**
      * Reemplaza SOLO el archivo de la plantilla de un tipo de contrato que
-     * ya existe (por ejemplo, para subir una versión corregida con los
-     * placeholders del Paso 6). A propósito NO borra ni vuelve a crear la
-     * fila de tipos_contrato: así sus campos dinámicos (campos_formulario)
-     * y todos los contratos que ya se hicieron con ese tipo siguen
-     * exactamente igual, intactos. Es la alternativa a "borrar y crear de
-     * nuevo", que truena por las llaves foráneas en cuanto ese tipo ya
-     * tiene al menos un contrato guardado (aunque ya esté eliminado).
-     */
+     * ya existe */
     /**
      * Guarda solo el prefijo fijo y las siglas del procedimiento de un
-     * tipo que ya existe (las dos piezas del folio real que son fijas por
-     * tipo, ver ContratosController::generarFolio()). Se edita aparte de
-     * create() porque los tipos que ya existían antes de este campo
-     * necesitan poder llenarlo sin tener que volver a subir su plantilla.
-     */
+     * tipo que ya existe  */
     public function actualizarFolio(int $id)
     {
         $tipoContrato = $this->tipoContratoModel->find($id);
@@ -140,10 +129,7 @@ class TipoContratoController extends BaseController
                 ->with('error', 'Formato no permitido. Solo se aceptan archivos Word (.docx) o Excel (.xlsx).');
         }
 
-        // Guarda la ruta del archivo VIEJO antes de pisarla, para borrarlo
-        // del disco después de que el nuevo ya se haya guardado bien (si
-        // algo fallara a medio camino, es mejor quedarse con un archivo
-        // viejo de sobra que quedarse sin ninguno).
+        
         $rutaAnterior = $tipoContrato['plantilla'] ? WRITEPATH . $tipoContrato['plantilla'] : null;
 
         $nuevoNombre = uniqid('plantilla_', true) . '.' . $extension;
@@ -159,5 +145,74 @@ class TipoContratoController extends BaseController
 
         return redirect()->to(route_to('tiposContratoGestion'))
             ->with('mensaje', 'Plantilla de "' . $tipoContrato['nombre'] . '" actualizada correctamente.');
+    }
+
+    // Edita solo el nombre; prefijo/siglas y plantilla ya tienen su propio
+    // formulario (actualizarFolio/actualizarPlantilla).
+    public function update(int $id)
+    {
+        $tipoContrato = $this->tipoContratoModel->find($id);
+
+        if (! $tipoContrato) {
+            return redirect()->to(route_to('tiposContratoGestion'))
+                ->with('error', 'Ese tipo de contrato no existe.');
+        }
+
+        $nombre = trim((string) $this->request->getPost('nombre'));
+
+        if ($nombre === '') {
+            return redirect()->to(route_to('tiposContratoGestion'))
+                ->with('error', 'El nombre no puede quedar vacío.');
+        }
+
+        $this->tipoContratoModel->update($id, ['nombre' => $nombre]);
+
+        return redirect()->to(route_to('tiposContratoGestion'))
+            ->with('mensaje', 'Tipo de contrato actualizado correctamente.');
+    }
+
+    // Activo/inactivo: para los tipos que ya no se usan pero no se pueden
+    // borrar porque ya tienen contratos o campos asociados (ver delete()).
+    public function cambiarEstado(int $id)
+    {
+        $tipoContrato = $this->tipoContratoModel->find($id);
+
+        if (! $tipoContrato) {
+            return redirect()->to(route_to('tiposContratoGestion'))
+                ->with('error', 'Ese tipo de contrato no existe.');
+        }
+
+        $this->tipoContratoModel->update($id, ['activo' => $tipoContrato['activo'] ? 0 : 1]);
+
+        return redirect()->to(route_to('tiposContratoGestion'))
+            ->with('mensaje', 'Estado de "' . $tipoContrato['nombre'] . '" actualizado.');
+    }
+
+    public function delete(int $id)
+    {
+        $tipoContrato = $this->tipoContratoModel->find($id);
+
+        if (! $tipoContrato) {
+            return redirect()->to(route_to('tiposContratoGestion'))
+                ->with('error', 'Ese tipo de contrato no existe.');
+        }
+
+        // tipos_contrato tiene llaves foráneas RESTRICT desde
+        // campos_formulario y contratos: si ya tiene campos o contratos
+        // asociados, la base de datos rechaza el borrado. En ese caso se
+        // avisa y se sugiere desactivarlo en vez de eliminarlo.
+        try {
+            $this->tipoContratoModel->delete($id);
+        } catch (\CodeIgniter\Database\Exceptions\DatabaseException $e) {
+            return redirect()->to(route_to('tiposContratoGestion'))
+                ->with('error', 'No se puede eliminar "' . $tipoContrato['nombre'] . '": ya tiene campos o contratos asociados. Desactívalo en su lugar.');
+        }
+
+        if (! empty($tipoContrato['plantilla']) && is_file(WRITEPATH . $tipoContrato['plantilla'])) {
+            unlink(WRITEPATH . $tipoContrato['plantilla']);
+        }
+
+        return redirect()->to(route_to('tiposContratoGestion'))
+            ->with('mensaje', 'Tipo de contrato "' . $tipoContrato['nombre'] . '" eliminado.');
     }
 }

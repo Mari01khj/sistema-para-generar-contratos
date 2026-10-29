@@ -28,6 +28,9 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
             $routes->post('(:num)/plantilla', 'TipoContratoController::actualizarPlantilla/$1');
             $routes->post('(:num)/folio', 'TipoContratoController::actualizarFolio/$1');
 
+            $routes->post('(:num)/editar', 'TipoContratoController::update/$1');
+            $routes->post('(:num)/estado', 'TipoContratoController::cambiarEstado/$1');
+            $routes->post('(:num)/eliminar', 'TipoContratoController::delete/$1');
             // Campos
             $routes->get('(:num)/campos', 'CamposFormularioController::gestion/$1', ['as' => 'camposFormularioGestion']);
             $routes->post('(:num)/campos/crear', 'CamposFormularioController::create/$1');
@@ -82,6 +85,10 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
         {
             $routes->get('/', 'BienesServiciosController::index');
             $routes->get('list', 'BienesServiciosController::listar');
+            $routes->post('crear', 'BienesServiciosController::create');
+            $routes->post('actualizar/(:num)', 'BienesServiciosController::update/$1');
+            $routes->post('estado/(:num)', 'BienesServiciosController::cambiarEstado/$1');
+            $routes->post('eliminar/(:num)', 'BienesServiciosController::delete/$1');
         });
 
         $routes->group('usuarios', static function ($routes) 

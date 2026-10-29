@@ -57,7 +57,6 @@ class ProveedoresController extends BaseController
         ]);
     }
 
-    // método actualizar
      public function update($id = null)
     {
         if ($id === null || !$this->proveedorModel->find($id)) 
@@ -89,6 +88,29 @@ class ProveedoresController extends BaseController
         return $this->response->setStatusCode(400)->setJSON([
             'status' => 400,
             'errors' => $this->proveedorModel->errors()
+        ]);
+    }
+
+    // activo/inactivo, sin borrar (ver BienesServiciosController::cambiarEstado)
+    public function cambiarEstado($id = null)
+    {
+        $proveedor = $id !== null ? $this->proveedorModel->find($id) : null;
+
+        if (! $proveedor)
+        {
+            return $this->response->setStatusCode(404)->setJSON([
+                'status'  => 404,
+                'message' => 'Proveedor no encontrado.'
+            ]);
+        }
+
+        $nuevoEstado = $proveedor['activo'] ? 0 : 1;
+        $this->proveedorModel->update($id, ['activo' => $nuevoEstado]);
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'status'  => 200,
+            'activo'  => $nuevoEstado,
+            'message' => $nuevoEstado ? 'Proveedor activado.' : 'Proveedor desactivado.'
         ]);
     }
 

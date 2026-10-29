@@ -88,6 +88,29 @@ class AreasController extends BaseController
         ]);
     }
 
+    // activo/inactivo, sin borrar
+    public function cambiarEstado($id = null)
+    {
+        $area = $id !== null ? $this->areaModel->find($id) : null;
+
+        if (! $area)
+        {
+            return $this->response->setStatusCode(404)->setJSON([
+                'status'  => 404,
+                'message' => 'Área no encontrada.'
+            ]);
+        }
+
+        $nuevoEstado = $area['activo'] ? 0 : 1;
+        $this->areaModel->update($id, ['activo' => $nuevoEstado]);
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'status'  => 200,
+            'activo'  => $nuevoEstado,
+            'message' => $nuevoEstado ? 'Área activada.' : 'Área desactivada.'
+        ]);
+    }
+
     // método eliminar
     public function delete($id = null)
     {
@@ -113,4 +136,3 @@ class AreasController extends BaseController
         ]);
     }
 }
-

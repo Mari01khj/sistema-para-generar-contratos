@@ -3,10 +3,12 @@
 <?= $this->section('content') ?>
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <h1 class="h3 mb-0 text-gray-800"><?= esc($titulo) ?></h1>
-    <button class="btn btn-primary shadow-sm" data-toggle="modal" data-target="#modalNuevaArea">
+    <button class="btn btn-primary shadow-sm" id="btnNuevo">
         <i class="fas fa-plus fa-sm text-white-50"></i> Nueva Área
     </button>
 </div>
+
+<p class="text-muted">Haz clic en una fila para ver, editar, desactivar o eliminar esa área.</p>
 
 <!-- Tabla de áreas -->
 <div class="card shadow mb-4">
@@ -15,12 +17,10 @@
             <table class="table table-bordered" id="tablaAreas" width="100%" cellspacing="0">
                 <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Nombre del Área</th>
                         <th>Titular</th>
                         <th>Cargo</th>
                         <th>Estado</th>
-                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="tbodyAreas">
@@ -30,265 +30,218 @@
     </div>
 </div>
 
-<!-- Modal para crear -->
-<div class="modal fade" id="modalNuevaArea" tabindex="-1" role="dialog" aria-hidden="true">
+<!-- Modal: alta y edición comparten el mismo formulario -->
+<div class="modal fade" id="modalArea" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Registrar Nueva Área</h5>
+                <h5 class="modal-title" id="tituloModalArea">Área</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
                 <form id="formArea">
+                    <input type="hidden" id="campo_id">
                     <div class="form-group">
                         <label>Nombre del Área</label>
-                        <input type="text" class="form-control" id="nombre_area" required>
+                        <input type="text" class="form-control" id="campo_nombre_area" required>
                     </div>
                     <div class="form-group">
                         <label>Nombre del Titular</label>
-                        <input type="text" class="form-control" id="titular_area" required>
+                        <input type="text" class="form-control" id="campo_titular_area" required>
                     </div>
                     <div class="form-group">
                         <label>Cargo del Titular</label>
-                        <input type="text" class="form-control" id="cargo_titular" placeholder="Director, Secretario" required>
+                        <input type="text" class="form-control" id="campo_cargo_titular" placeholder="Director, Secretario" required>
                     </div>
                 </form>
-                <div id="alertaError" class="alert alert-danger d-none mt-3"></div>
+                <div id="alertaErrorModal" class="alert alert-danger d-none mt-3"></div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- Modal para Editar -->
-<div class="modal fade" id="modalEditarArea" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Editar Área</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+            <div class="modal-footer flex-column align-items-stretch">
+                <div class="d-flex justify-content-between mb-2">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
+                </div>
+                <button type="button" class="btn btn-outline-warning d-none" id="btnDesactivar">
+                    <i class="fas fa-ban"></i> <span id="textoDesactivar">Desactivar</span>
                 </button>
-            </div>
-            <div class="modal-body">
-                <form id="formEditarArea">
-                    <input type="hidden" id="edit_id">
-                    
-                    <div class="form-group">
-                        <label>Nombre del Área</label>
-                        <input type="text" class="form-control" id="edit_nombre_area" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Nombre del Titular</label>
-                        <input type="text" class="form-control" id="edit_titular_area" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Cargo del Titular</label>
-                        <input type="text" class="form-control" id="edit_cargo_titular" required>
-                    </div>
-                </form>
-                <div id="alertaErrorEdit" class="alert alert-danger d-none mt-3"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="btnActualizar">Actualizar</button>
+                <button type="button" class="btn btn-link text-danger d-none" id="btnEliminar">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+let areaActual = null;
+
 document.addEventListener("DOMContentLoaded", function() {
     cargarAreas();
 
-    document.getElementById('btnGuardar').addEventListener('click', function() {
-        guardarArea();
+    document.getElementById('btnNuevo').addEventListener('click', () => abrirModal(null));
+    document.getElementById('tbodyAreas').addEventListener('click', function (e) {
+        const fila = e.target.closest('tr[data-item]');
+        if (!fila) return;
+        abrirModal(JSON.parse(fila.dataset.item));
     });
+
+    document.getElementById('btnGuardar').addEventListener('click', guardarArea);
+    document.getElementById('btnDesactivar').addEventListener('click', cambiarEstado);
+    document.getElementById('btnEliminar').addEventListener('click', eliminarArea);
 });
 
-function cargarAreas() 
+function cargarAreas()
 {
-    fetch('<?= base_url('areas/list') ?>', 
+    fetch('<?= base_url('areas/list') ?>',
     {
         headers: { 'Accept': 'application/json' }
     })
     .then(response => response.json())
     .then(data => {
-       
-        if ($.fn.DataTable && $.fn.DataTable.isDataTable('#tablaAreas')) {
-            $('#tablaAreas').DataTable().clear().destroy();
-        }
-        
         const tbody = document.getElementById('tbodyAreas');
-        tbody.innerHTML = ''; 
+        tbody.innerHTML = '';
+
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Sin áreas.</td></tr>';
+        }
 
         data.forEach(area => {
-            let estado = area.activo == 1 
-                ? '<span class="badge badge-success">Activo</span>' 
+            const estado = area.activo == 1
+                ? '<span class="badge badge-success">Activo</span>'
                 : '<span class="badge badge-danger">Inactivo</span>';
-                
-            tbody.innerHTML += `
-                <tr>
-                    <td>${area.id}</td>
-                    <td>${area.nombre_area}</td>
-                    <td>${area.titular_area}</td>
-                    <td>${area.cargo_titular}</td>
-                    <td>${estado}</td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="editarArea(
-                        ${area.id}, '${area.nombre_area}', '${area.titular_area}', '${area.cargo_titular}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-danger" onclick="eliminarArea(${area.id})" btn-sm"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
-            `;
-        });
 
-        // Inicializar DataTable 
-        setTimeout(() => {
-            if ($.fn.DataTable) {
-                $('#tablaAreas').DataTable({
-                    "language": {
-                        "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
-                    }
-                });
-            } else {
-                console.error("DataTables no está cargado.");
-            }
-        }, 100);
+            const fila = document.createElement('tr');
+            fila.style.cursor = 'pointer';
+            fila.dataset.item = JSON.stringify(area);
+            fila.innerHTML = `
+                <td>${area.nombre_area}</td>
+                <td>${area.titular_area}</td>
+                <td>${area.cargo_titular}</td>
+                <td>${estado}</td>
+            `;
+            tbody.appendChild(fila);
+        });
     })
     .catch(error => console.error("Error cargando la tabla:", error));
 }
 
-function guardarArea() 
+function abrirModal(area)
 {
-    const datosArea = 
-    {
-        nombre_area: document.getElementById('nombre_area').value,
-        titular_area: document.getElementById('titular_area').value,
-        cargo_titular: document.getElementById('cargo_titular').value
-    };
+    areaActual = area;
 
-    fetch('<?= base_url('areas/crear') ?>', 
-    {
-        method: 'POST',
-        headers: 
-        {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify(datosArea)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 201) 
-        {
-            $('#modalNuevaArea').modal('hide');
-            document.getElementById('formArea').reset();
-            document.getElementById('alertaError').classList.add('d-none');
-            
-            cargarAreas(); 
-            mostrarToast(data.message, 'success'); 
-        } 
-        else 
-        {
-            let divError = document.getElementById('alertaError');
-            divError.innerHTML = data.message;
-            divError.classList.remove('d-none');
-        }
-    })
-    .catch(error => console.error('Error en fetch:', error));
-}
+    document.getElementById('formArea').reset();
+    document.getElementById('alertaErrorModal').classList.add('d-none');
 
-function eliminarArea(id) 
-{
-    if (confirm("¿Estás seguro de eliminar esta área?")) 
-    {
-        fetch(`<?= base_url('areas/eliminar/') ?>${id}`, 
-        {
-            method: 'POST',
-            headers: 
-            {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 200) 
-            {
-                mostrarToast(data.message, 'success');
-                cargarAreas(); 
-            } 
-            else 
-            {
-                mostrarToast('Error: ' + data.message, 'danger');
-            }
-        })
-        .catch(error => console.error("Error al eliminar:", error));
+    if (area) {
+        document.getElementById('tituloModalArea').textContent = 'Editar Área';
+        document.getElementById('campo_id').value = area.id;
+        document.getElementById('campo_nombre_area').value = area.nombre_area;
+        document.getElementById('campo_titular_area').value = area.titular_area;
+        document.getElementById('campo_cargo_titular').value = area.cargo_titular;
+
+        document.getElementById('btnDesactivar').classList.remove('d-none');
+        document.getElementById('btnEliminar').classList.remove('d-none');
+        document.getElementById('textoDesactivar').textContent = area.activo == 1 ? 'Desactivar' : 'Activar';
+    } else {
+        document.getElementById('tituloModalArea').textContent = 'Registrar Nueva Área';
+        document.getElementById('campo_id').value = '';
+        document.getElementById('btnDesactivar').classList.add('d-none');
+        document.getElementById('btnEliminar').classList.add('d-none');
     }
-}
-function editarArea(id, nombre, titular, cargo) {
-    document.getElementById('edit_id').value = id;
-    document.getElementById('edit_nombre_area').value = nombre;
-    document.getElementById('edit_titular_area').value = titular;
-    document.getElementById('edit_cargo_titular').value = cargo;
-    
-    document.getElementById('alertaErrorEdit').classList.add('d-none');
 
-    $('#modalEditarArea').modal('show');
+    $('#modalArea').modal('show');
 }
 
-// fech
-document.getElementById('btnActualizar').addEventListener('click', function() 
+function datosFormulario()
 {
-    const id = document.getElementById('edit_id').value;
-    
-    const datosActualizados = 
-    {
-        nombre_area: document.getElementById('edit_nombre_area').value,
-        titular_area: document.getElementById('edit_titular_area').value,
-        cargo_titular: document.getElementById('edit_cargo_titular').value
+    return {
+        nombre_area:   document.getElementById('campo_nombre_area').value,
+        titular_area:  document.getElementById('campo_titular_area').value,
+        cargo_titular: document.getElementById('campo_cargo_titular').value
     };
+}
 
-    let btnActualizar = document.getElementById('btnActualizar');
-    btnActualizar.disabled = true;
-    btnActualizar.innerText = "Actualizando...";
+function guardarArea()
+{
+    const id  = document.getElementById('campo_id').value;
+    const url = id
+        ? `<?= base_url('areas/actualizar/') ?>${id}`
+        : `<?= base_url('areas/crear') ?>`;
 
-    fetch(`<?= base_url('areas/actualizar/') ?>${id}`, 
+    const btn = document.getElementById('btnGuardar');
+    btn.disabled = true;
+
+    fetch(url,
     {
         method: 'POST',
-        headers: 
+        headers:
         {
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify(datosActualizados)
+        body: JSON.stringify(datosFormulario())
     })
     .then(response => response.json())
     .then(data => {
-        if (data.status === 200) 
-        {
-            $('#modalEditarArea').modal('hide');
-            cargarAreas(); 
+        if (data.status === 200 || data.status === 201) {
+            $('#modalArea').modal('hide');
+            cargarAreas();
             mostrarToast(data.message, 'success');
-        } 
-        else 
-        {
-            let divError = document.getElementById('alertaErrorEdit');
-            divError.innerHTML = data.message || "Error de validación.";
-            divError.classList.remove('d-none');
+        } else {
+            const div = document.getElementById('alertaErrorModal');
+            div.innerHTML = data.message || 'Error de validación.';
+            div.classList.remove('d-none');
         }
     })
     .catch(error => console.error('Error en fetch:', error))
-    .finally(() => 
+    .finally(() => { btn.disabled = false; });
+}
+
+function cambiarEstado()
+{
+    if (!areaActual) return;
+
+    fetch(`<?= base_url('areas/estado/') ?>${areaActual.id}`,
     {
-        btnActualizar.disabled = false;
-        btnActualizar.innerText = "Actualizar";
-    });
-});
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 200) {
+            $('#modalArea').modal('hide');
+            cargarAreas();
+            mostrarToast(data.message, 'success');
+        } else {
+            mostrarToast('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => console.error("Error cambiando estado:", error));
+}
+
+function eliminarArea()
+{
+    if (!areaActual) return;
+    if (!confirm("¿Estás seguro de eliminar esta área?")) return;
+
+    fetch(`<?= base_url('areas/eliminar/') ?>${areaActual.id}`,
+    {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 200) {
+            $('#modalArea').modal('hide');
+            cargarAreas();
+            mostrarToast(data.message, 'success');
+        } else {
+            mostrarToast('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => console.error("Error al eliminar:", error));
+}
 </script>
 <?= $this->endSection() ?>

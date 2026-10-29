@@ -19,27 +19,16 @@
     </div>
 <?php endif; ?>
 
-<!-- A diferencia de crear.php, aquí NO hay un selector de "Paso 1: elegir -->
-<!-- tipo", porque el tipo de un contrato ya existente no se puede cambiar. -->
-<!-- Se muestra solo como texto informativo. Si el tipo de verdad estuviera -->
-<!-- mal, lo correcto es eliminar (soft-delete) este contrato y crear uno -->
-<!-- nuevo del tipo correcto, no "migrar" uno existente: sus campos -->
-<!-- dinámicos están ligados al tipo original y cambiarlo dejaría huérfanos -->
-<!-- los valores guardados en contrato_valores. -->
+
 <div class="alert alert-secondary">
     Tipo de contrato: <strong><?= esc($tipoContrato['nombre']) ?></strong>
     <?php if ($fuente): ?>
         &nbsp;·&nbsp; Fuente de financiamiento: <strong><?= esc($fuente['nombre']) ?></strong>
     <?php endif; ?>
-    <span class="text-muted">(no se puede cambiar; para eso hay que crear un contrato nuevo)</span>
+    <span class="text-muted">(no se puede cambiar pues afecta directo en el folio del contrato)</span>
 </div>
 
 <?php
-    // $valoresFijos trae los datos ya guardados del propio contrato
-    // (proveedor_id, descripcion_corta, fecha_entrega, etc.) y $valoresCampos
-    // trae un mapa [campo_id => valor] con sus campos dinámicos ya guardados.
-    // Dentro del partial, old() sigue teniendo prioridad sobre estos dos, por
-    // si el usuario ya intentó guardar y hubo un error de validación.
 ?>
 <?= view('contratos/_formulario', [
     'accionUrl'          => site_url('contratos/' . $contrato['id'] . '/actualizar'),
