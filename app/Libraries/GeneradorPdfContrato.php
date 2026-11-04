@@ -6,9 +6,9 @@ use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
 use PhpOffice\PhpWord\TemplateProcessor;
 
 use RuntimeException;
+// Llena el machote (.docx/.xlsx) con los valores reales
 class GeneradorPdfContrato
 {
-
     private function datosFijos(array $contrato): array
     {
         $subtotal = (float) $contrato['subtotal'];
@@ -17,6 +17,7 @@ class GeneradorPdfContrato
         $montoMinimo   = $total * 0.60;
         $diezImporte   = $subtotal * 0.10;
         $cincoImporte  = $subtotal * 0.05;
+        $anticipo      = $total * 0.50; 
 
         return [
             'folio'               => $contrato['folio'],
@@ -38,8 +39,12 @@ class GeneradorPdfContrato
             'diez_importe_texto'  => $this->numeroALetras($diezImporte),
             'cinco_importe'       => number_format($cincoImporte, 2),
             'cinco_importe_texto' => $this->numeroALetras($cincoImporte),
+            'anticipo'            => number_format($anticipo, 2),
+            'anticipo_texto'      => $this->numeroALetras($anticipo),
 
             'nombre_proveedor'    => $contrato['razon_social'],
+            'fuente_financiamiento' => $contrato['fuente_nombre'] ?? '',
+            'clave_fuente'            => $contrato['fuente_clave'] ?? '',
 
             'area_usuaria'        => $contrato['nombre_area'],
             'area_tecnica'        => $contrato['nombre_area'],
@@ -69,7 +74,7 @@ class GeneradorPdfContrato
         return [
             'titular_area'  => $area['titular_area'] ?? '',
             'cargo_titular' => $area['cargo_titular'] ?? '',
-            'titular_area' => $area['titular_area'] ?? '',
+            'titular_areal' => $area['titular_area'] ?? ''
         ];
     }
 
@@ -129,8 +134,10 @@ class GeneradorPdfContrato
         {
             $filasPartidas[] = [
                 'partida'              => (string) $partida['num_partida'],
-                'descripcion_detallada' => $partida['descripcion'],
+                'nombre_bien'          => $partida['descripcion'],
+                'descripcion_detallada' => $partida['descripcion'], // alias
                 'u_medida'             => $partida['unidad_medida'],
+                'unidad_medida'        => $partida['unidad_medida'], // alias
                 'cantidad'             => $this->formatoCantidad((float) $partida['cantidad']),
                 'marca'                => $partida['marca'] ?? '',
                 'p_unit'               => number_format((float) $partida['precio_unitario'], 2),
@@ -171,6 +178,9 @@ class GeneradorPdfContrato
         // arregla "${marcador}" partido por un cuadro amarillo antes de que PhpWord lo corrompa.
         $rutaPlantillaSaneada = $this->saneaMarcadoresPartidosPorControles($rutaPlantilla);
 
+        // repite el bloque de cada partida (fila de datos + descripcion detallada)
+        $partidasYaLlenas = $this->expandirPartidasWord($rutaPlantillaSaneada, $filasPartidas);
+
         try {
             $tp = new TemplateProcessor($rutaPlantillaSaneada);
 
@@ -179,7 +189,9 @@ class GeneradorPdfContrato
                 $tp->setValue($nombrePlaceholder, (string) $valorReal);
             }
             try {
-                $tp->cloneRowAndSetValues('partida', $filasPartidas);
+                if (! $partidasYaLlenas) {
+                    $tp->cloneRowAndSetValues('partida', $filasPartidas);
+                }
             } catch (\Exception $e) {
                 throw new RuntimeException(
                     'La plantilla de este tipo de contrato no tiene preparada la '
@@ -204,8 +216,124 @@ class GeneradorPdfContrato
         return $rutaDocxLleno;
     }
 
+    // Repite por cada partida el bloque de filas 
+    private function expandirPartidasWord(string $rutaDocx, array $filasPartidas): bool
+    {
+        if (! $filasPartidas) {
+            return false;
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($rutaDocx) !== true) {
+            return false;
+        }
+
+        $xml = $zip->getFromName('word/document.xml');
+        $dom = new \DOMDocument();
+        $dom->preserveWhiteSpace = true;
+        if ($xml === false || ! @$dom->loadXML($xml)) {
+            $zip->close();
+            return false;
+        }
+
+        $xpath = new \DOMXPath($dom);
+        $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
+
+        $patronPartida = '/\$\{\s*partida\s*\}/';
+        $patronDescripcion = '/\$\{\s*(nombre_bien|descripcion_detallada)\s*\}/';
+
+        $filaInicio = null;
+        foreach ($xpath->query('//w:tr') as $fila) {
+            if (preg_match($patronPartida, $fila->textContent)) {
+                $filaInicio = $fila;
+                break;
+            }
+        }
+
+        if (! $filaInicio) {
+            $zip->close();
+            return false;
+        }
+
+        $bloque = [$filaInicio];
+        if (! preg_match($patronDescripcion, $filaInicio->textContent)) {
+            $candidatas = [];
+            $hermana = $filaInicio->nextSibling;
+            while ($hermana !== null) {
+                if ($hermana instanceof \DOMElement && $hermana->localName === 'tr') {
+                    $candidatas[] = $hermana;
+                    if (preg_match($patronDescripcion, $hermana->textContent)) {
+                        $bloque = array_merge($bloque, $candidatas);
+                        break;
+                    }
+                }
+                $hermana = $hermana->nextSibling;
+            }
+        }
+
+        $ultima = end($bloque);
+        $siguiente = $ultima->nextSibling;
+        $padre = $ultima->parentNode;
+
+        foreach ($filasPartidas as $valores) {
+            foreach ($bloque as $fila) {
+                $copia = $fila->cloneNode(true);
+                $this->llenarMarcadoresDeFila($xpath, $copia, $valores);
+                $padre->insertBefore($copia, $siguiente);
+            }
+        }
+
+        foreach ($bloque as $fila) {
+            $padre->removeChild($fila);
+        }
+
+        $zip->addFromString('word/document.xml', $dom->saveXML($dom->documentElement));
+        $zip->close();
+
+        return true;
+    }
+
+    // Reemplaza los ${marcadores} de cada parrafo aunque Word los haya
+    // partido en varios fragmentos o tengan espacios 
+    private function llenarMarcadoresDeFila(\DOMXPath $xpath, \DOMElement $fila, array $valores): void
+    {
+        foreach ($xpath->query('.//w:p', $fila) as $parrafo) {
+            $nodos = $xpath->query('.//w:t', $parrafo);
+            if (! $nodos->length) {
+                continue;
+            }
+
+            $texto = '';
+            foreach ($nodos as $nodo) {
+                $texto .= $nodo->textContent;
+            }
+
+            if (! str_contains($texto, '${')) {
+                continue;
+            }
+
+            $nuevo = preg_replace_callback(
+                '/\$\{\s*([a-zA-Z0-9_]+)\s*\}/',
+                static fn ($m) => array_key_exists($m[1], $valores) ? (string) $valores[$m[1]] : $m[0],
+                $texto
+            );
+
+            if ($nuevo === $texto) {
+                continue;
+            }
+
+            $primero = true;
+            foreach ($nodos as $nodo) {
+                $nodo->textContent = $primero ? $nuevo : '';
+                if ($primero) {
+                    $nodo->setAttribute('xml:space', 'preserve');
+                }
+                $primero = false;
+            }
+        }
+    }
+
     // Copia el machote y mete el "$" suelto dentro del cuadro amarillo
-    // cuando quedó partido a la mitad por la etiqueta <w:sdt>.
     private function saneaMarcadoresPartidosPorControles(string $rutaPlantillaOriginal): string
     {
         $rutaTemp = tempnam(sys_get_temp_dir(), 'machote_') . '.docx';
@@ -225,7 +353,6 @@ class GeneradorPdfContrato
                 $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
 
                 foreach (iterator_to_array($xpath->query('//w:sdt')) as $sdt) {
-                    // excluye campos nativos de Word (num. de pagina, etc).
                     if ($xpath->query('.//w:docPartGallery', $sdt)->length > 0) {
                         continue;
                     }
@@ -235,14 +362,11 @@ class GeneradorPdfContrato
                         continue;
                     }
 
-                    // Primer texto visible DENTRO del cuadro: ¿empieza con "{"?
                     $primerTexto = $xpath->query('.//w:t', $sdtContent)->item(0);
                     if (! $primerTexto || ! str_starts_with($primerTexto->textContent, '{')) {
                         continue;
                     }
 
-                    // Último texto visible de la run/párrafo que viene
-                    // ANTES del cuadro (fuera de él): ¿termina en "$"?
                     $runAnterior = $this->runDeTextoAnterior($sdt);
                     if (! $runAnterior) {
                         continue;
@@ -252,9 +376,7 @@ class GeneradorPdfContrato
                         continue;
                     }
 
-                    // Mueve el "$" de afuera hacia adentro del cuadro, al
-                    // inicio de su primer texto, y quita esa run si se
-                    // queda vacía (si solo tenía el "$" suelto).
+                    // Mueve el "$" de afuera hacia adentro del cuadro
                     $textoAnterior->textContent = substr($textoAnterior->textContent, 0, -1);
                     $primerTexto->textContent    = '$' . $primerTexto->textContent;
 
@@ -274,9 +396,7 @@ class GeneradorPdfContrato
 
     /**
      * Busca, hacia atrás a partir de $nodo, el nodo <w:r> (run) de texto
-     * más cercano que no sea el propio $nodo — saltándose nodos vacíos o
-     * sin texto visible  que pudieran estar entre medio. Regresa null si no encuentra ninguno antes de llegar al
-     * principio del párrafo.
+     * más cercano que no sea el propio $nodo 
      */
     private function runDeTextoAnterior(\DOMNode $nodo): ?\DOMElement
     {
@@ -298,8 +418,6 @@ class GeneradorPdfContrato
 
     /**
      * Quita los atributos w14:paraId/w14:textId del documento ya guardado
-     *se hace directamente sobre el .docx ya guardado porque TemplateProcessor no expone una
-     * forma de tocar su XML interno antes de saveAs().
      */
     private function quitarIdsDuplicadosDeParrafos(string $rutaDocx): void
     {
@@ -378,9 +496,8 @@ class GeneradorPdfContrato
 
     /**
      * Duplica la fila ancla de la tabla de Partidas una vez por cada
-     * partida copiando también el formato de las celdas, y llena cada copia con los datos de su propia
-     * partida. Si no hay partidas, simplemente deja la fila ancla vacía
-     */
+     * partida copiando también el formato de las celdas*/
+    
     private function llenarTablaPartidasExcel(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $hoja,
         int $filaAncla,
@@ -446,6 +563,7 @@ class GeneradorPdfContrato
     }
 
     // Si la celda es solo un placeholder numérico, manda el número real
+    // (no el string con comas) para que el formato de moneda de la celda se aplique solo.
     private function valorCeldaResuelto(string $textoOriginal, array $valores)
     {
         if (preg_match('/^\$\{([a-zA-Z0-9_]+)\}$/', trim($textoOriginal), $coincidencia)
@@ -484,7 +602,6 @@ class GeneradorPdfContrato
                     continue;
                 }
 
-                // texto mixto viene como RichText.
                 if ($valorCelda instanceof \PhpOffice\PhpSpreadsheet\RichText\RichText) {
                     foreach ($valorCelda->getRichTextElements() as $elemento) {
                         $texto = $elemento->getText();
@@ -508,7 +625,7 @@ class GeneradorPdfContrato
         return $texto;
     }
 
-    // Quita los decimales solo cuando son puro 
+    // Quita los decimales solo cuando son puro ".00" (10 piezas vs 2.5 kg).
     private function formatoCantidad(float $cantidad): string
     {
         if ($cantidad == floor($cantidad)) {
@@ -518,7 +635,10 @@ class GeneradorPdfContrato
         return number_format($cantidad, 2);
     }
 
-    /** Convierte un monto a su representacion en letras */
+    /**
+     * Convierte un monto a su representacion en letras para contratos
+     * (ej. 553.32 -> "QUINIENTOS CINCUENTA Y TRES PESOS 32/100 M.N.")
+     */
     private function numeroALetras(float $monto): string
     {
         $entero   = (int) floor($monto);

@@ -1,8 +1,6 @@
 <?php
 /**
- * Partial compartido 
- */
-
+ * Partial compartido por contratos/crear.php */
 $valoresFijos  ??= [];
 $valoresCampos ??= [];
 $textoBoton    ??= 'Guardar contrato';
@@ -48,20 +46,18 @@ $textoBoton    ??= 'Guardar contrato';
                 <input type="text" name="descripcion_corta" class="form-control" maxlength="255"
                     value="<?= esc(old('descripcion_corta') ?? ($valoresFijos['descripcion_corta'] ?? '')) ?>"
                     placeholder="Ej. Adquisición de uniformes del Ayuntamiento" required>
-                <small class="form-text text-muted">Resumen del objeto del contrato.</small>
+                <small class="form-text text-muted">Resumen del objeto del contrato</small>
             </div>
 
+           
             <div class="form-group">
-                <label>Nombre del bien </label>
+                <label>Nombre general del bien </label>
                 <textarea name="nombre_bien" class="form-control" rows="3"
-                    placeholder='Ej. "EL PROVEEDOR" SUMINISTRE A "EL MUNICIPIO" CONCRETO HIDRÁULICO PREMEZCLADO, DESTINADO A...'
                 ><?= esc(old('nombre_bien') ?? ($valoresFijos['nombre_bien'] ?? '')) ?></textarea>
-                <small class="form-text text-muted">nombre adicional opcional.</small>
             </div>
-
+ 
             <?php if (isset($fuentes)): ?>
-                <!-- La fuente de financiamiento solo se elige al CREAR el -->
-                <!-- contrato y el folio ya se arma con ella-->
+                
                 <div class="form-group">
                     <label>Fuente de financiamiento <span class="text-danger">*</span></label>
                     <?php $fuentePrevia = old('fuente_financiamiento_id'); ?>
@@ -79,8 +75,8 @@ $textoBoton    ??= 'Guardar contrato';
             <div class="form-row">
                 <div class="form-group col-md-4">
                     <label>Fecha de entrega</label>
-                   
                     <input type="text" name="fecha_entrega" class="form-control"
+                        placeholder="Ej. 15/12/2026 o &quot;Hasta 15 días hábiles después de la firma&quot;"
                         value="<?= esc(old('fecha_entrega') ?? ($valoresFijos['fecha_entrega'] ?? '')) ?>">
                 </div>
                 <div class="form-group col-md-4">
@@ -105,7 +101,7 @@ $textoBoton    ??= 'Guardar contrato';
     <?php if (! empty($camposDinamicos)): ?>
         <div class="card shadow mb-4">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Datos específicos del "<?= esc($tipoContrato['nombre']) ?>"</h6>
+                <h6 class="m-0 font-weight-bold text-primary">Datos específicos de "<?= esc($tipoContrato['nombre']) ?>"</h6>
             </div>
             <div class="card-body">
                 <?php foreach ($camposDinamicos as $campo): ?>
@@ -118,6 +114,7 @@ $textoBoton    ??= 'Guardar contrato';
                         <?php
                             // old() gana siempre; si no hay old(), se usa el
                             // valor ya guardado que venga en $valoresCampos
+                            // (editar.php lo manda, crear.php lo deja vacío).
                             $valorPrevio = old('campos.' . $campo['id']) ?? ($valoresCampos[$campo['id']] ?? '');
                         ?>
 
@@ -154,7 +151,11 @@ $textoBoton    ??= 'Guardar contrato';
         </div>
     <?php endif; ?>
 
-    <!-- Partidas: calculo que se ve en la vista -->
+    <!-- Partidas: cada renglón es un bien/servicio del contrato (descripción detallada, -->
+    <!-- unidad de medida, cantidad, precio unitario). El importe de cada renglón y los -->
+    <!-- totales se recalculan aquí solo para que el usuario los vea; el servidor vuelve a -->
+    <!-- calcular todo antes de guardar, así que estos números en pantalla no son los que -->
+    <!-- deciden lo que se guarda. -->
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Partidas</h6>
@@ -188,8 +189,7 @@ $textoBoton    ??= 'Guardar contrato';
                                 </td>
                                 <td>
                                     <input type="text" name="bienes[<?= $i ?>][unidad_medida]" class="form-control campo-unidad"
-                                        value="<?= esc($fila['unidad_medida'] ?? '') ?>" placeholder="Pieza"
-                                        list="listaUnidadesMedida" autocomplete="off">
+                                        value="<?= esc($fila['unidad_medida'] ?? '') ?>" placeholder="Pieza" autocomplete="off">
                                 </td>
                                 <td>
                                     <input type="text" name="bienes[<?= $i ?>][marca]" class="form-control"
@@ -217,7 +217,7 @@ $textoBoton    ??= 'Guardar contrato';
                 <tr class="fila-partida">
                     <td class="text-center numero-fila">0</td>
                     <td><input type="text" name="bienes[__i__][descripcion]" class="form-control campo-descripcion" placeholder="Ej. Camisa tipo polo, talla M, bordado logo" autocomplete="off"></td>
-                    <td><input type="text" name="bienes[__i__][unidad_medida]" class="form-control campo-unidad" placeholder="Pieza" list="listaUnidadesMedida" autocomplete="off"></td>
+                    <td><input type="text" name="bienes[__i__][unidad_medida]" class="form-control campo-unidad" placeholder="Pieza" autocomplete="off"></td>
                     <td><input type="text" name="bienes[__i__][marca]" class="form-control"></td>
                     <td><input type="number" step="any" min="0" name="bienes[__i__][cantidad]" class="form-control campo-cantidad"></td>
                     <td><input type="number" step="any" min="0" name="bienes[__i__][precio_unitario]" class="form-control campo-precio"></td>
@@ -226,7 +226,6 @@ $textoBoton    ??= 'Guardar contrato';
                 </tr>
             </template>
 
-            <datalist id="listaUnidadesMedida"></datalist>
 
             <table class="table table-sm mt-3" style="max-width: 320px; margin-left: auto;">
                 <tr>
@@ -302,72 +301,100 @@ $textoBoton    ??= 'Guardar contrato';
         }
     });
 
-   
-    var datalistUnidades = document.getElementById('listaUnidadesMedida');
+    // Lista de sugerencias propia (no <datalist>, que depende del navegador).
+    var caja = document.createElement('div');
+    caja.style.cssText = 'position:fixed;z-index:2000;display:none;background:#fff;border:1px solid #d1d3e2;'
+        + 'border-radius:4px;max-height:240px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.15);font-size:.9rem;';
+    document.body.appendChild(caja);
+
+    function ocultarSugerencias() { caja.style.display = 'none'; }
+
+    function mostrarSugerencias(campo, items, alElegir) {
+        caja.innerHTML = '';
+        if (!items.length) { ocultarSugerencias(); return; }
+
+        items.forEach(function (item) {
+            var opcion = document.createElement('div');
+            opcion.textContent = item.texto;
+            opcion.style.cssText = 'padding:6px 10px;cursor:pointer;';
+            opcion.addEventListener('mouseenter', function () { opcion.style.background = '#eaecf4'; });
+            opcion.addEventListener('mouseleave', function () { opcion.style.background = ''; });
+            // mousedown (no click): se dispara antes del blur del campo.
+            opcion.addEventListener('mousedown', function (e) {
+                e.preventDefault();
+                campo.value = item.texto;
+                ocultarSugerencias();
+                alElegir(item);
+            });
+            caja.appendChild(opcion);
+        });
+
+        var r = campo.getBoundingClientRect();
+        caja.style.left = r.left + 'px';
+        caja.style.top = r.bottom + 'px';
+        caja.style.width = Math.max(r.width, 280) + 'px';
+        caja.style.display = 'block';
+    }
+
+    window.addEventListener('scroll', ocultarSugerencias, true);
+    window.addEventListener('resize', ocultarSugerencias);
+
+    // --- Unidades de Medida: se filtran en el navegador al escribir ---
+    var nombresUnidades = [];
 
     fetch('<?= base_url('unidades-medida/activas') ?>', { headers: { 'Accept': 'application/json' } })
         .then(function (resp) { return resp.json(); })
-        .then(function (nombres) {
-            nombres.forEach(function (nombre) {
-                var opcion = document.createElement('option');
-                opcion.value = nombre;
-                datalistUnidades.appendChild(opcion);
-            });
-        })
+        .then(function (nombres) { nombresUnidades = nombres; })
         .catch(function (error) { console.error('No se pudieron cargar las unidades de medida:', error); });
 
-    var uidDatalist = 0;
+    function sugerirUnidades(campo) {
+        var texto = campo.value.trim().toLowerCase();
+        var items = nombresUnidades
+            .filter(function (n) { return n.toLowerCase().indexOf(texto) !== -1; })
+            .map(function (n) { return { texto: n }; });
+        mostrarSugerencias(campo, items, function () {});
+    }
 
+    cuerpo.addEventListener('focusin', function (e) {
+        if (e.target.classList.contains('campo-unidad')) sugerirUnidades(e.target);
+    });
+    cuerpo.addEventListener('click', function (e) {
+        if (e.target.classList.contains('campo-unidad')) sugerirUnidades(e.target);
+    });
+    cuerpo.addEventListener('input', function (e) {
+        if (e.target.classList.contains('campo-unidad')) sugerirUnidades(e.target);
+    });
+    cuerpo.addEventListener('focusout', function () { setTimeout(ocultarSugerencias, 150); });
+
+    // --- Bienes/Servicios: se buscan en el servidor al escribir en "Descripción" ---
     function prepararAutocompletarBien(fila) {
         var campoDescripcion = fila.querySelector('.campo-descripcion');
         if (!campoDescripcion) return;
 
-        uidDatalist++;
-        var idDatalist = 'dl-bien-' + uidDatalist;
-        var datalistFila = document.createElement('datalist');
-        datalistFila.id = idDatalist;
-        campoDescripcion.parentNode.appendChild(datalistFila);
-        campoDescripcion.setAttribute('list', idDatalist);
-
-        
-        var catalogoPorNombre = {};
         var temporizador = null;
 
         campoDescripcion.addEventListener('input', function () {
             var texto = campoDescripcion.value.trim();
 
-            if (catalogoPorNombre[texto]) {
-                var datos = catalogoPorNombre[texto];
-                if (datos.unidad) {
-                    fila.querySelector('.campo-unidad').value = datos.unidad;
-                }
-                if (datos.precio !== null && datos.precio !== undefined) {
-                    fila.querySelector('.campo-precio').value = datos.precio;
-                }
-                recalcular();
-                return;
-            }
-
             clearTimeout(temporizador);
-            if (texto.length < 3) {
-                datalistFila.innerHTML = '';
-                return;
-            }
-.
+            if (texto.length < 3) { ocultarSugerencias(); return; }
+
             temporizador = setTimeout(function () {
                 fetch('<?= base_url('bienes-servicios/buscar') ?>?q=' + encodeURIComponent(texto), {
                     headers: { 'Accept': 'application/json' }
                 })
                 .then(function (resp) { return resp.json(); })
                 .then(function (resultados) {
-                    datalistFila.innerHTML = '';
-                    catalogoPorNombre = {};
+                    var items = resultados.map(function (r) {
+                        return { texto: r.nombre, unidad: r.unidad_medida, precio: r.precio };
+                    });
 
-                    resultados.forEach(function (item) {
-                        var opcion = document.createElement('option');
-                        opcion.value = item.nombre;
-                        datalistFila.appendChild(opcion);
-                        catalogoPorNombre[item.nombre] = { unidad: item.unidad_medida, precio: item.precio };
+                    mostrarSugerencias(campoDescripcion, items, function (item) {
+                        if (item.unidad) fila.querySelector('.campo-unidad').value = item.unidad;
+                        if (item.precio !== null && item.precio !== undefined) {
+                            fila.querySelector('.campo-precio').value = item.precio;
+                        }
+                        recalcular();
                     });
                 })
                 .catch(function (error) { console.error('Error buscando en el catálogo:', error); });

@@ -15,12 +15,8 @@ use RuntimeException;
 
 class ContratosController extends BaseController
 {
-  
     private const TASA_IVA = 0.16;
 
-    /**
-     *campos de columnas fijas 
-     */
     private const CAMPOS_RESERVADOS = [
         'folio',
         'tipo_contrato_id',
@@ -48,6 +44,7 @@ class ContratosController extends BaseController
     protected $bienesModel;
     protected $fuenteModel;
 
+    // Carga los modelos que usa el controlador.
     public function __construct()
     {
         $this->contratoModel     = new ContratosModel();
@@ -60,8 +57,7 @@ class ContratosController extends BaseController
         $this->fuenteModel       = new FuentesFinanciamientoModel();
     }
 
-    /**
-     * Listado de contratos */
+    // Lista de contratos.
     public function index()
     {
         return view('contratos/index', [
@@ -69,10 +65,9 @@ class ContratosController extends BaseController
         ]);
     }
 
-    /**pantalla de SOLO LECTURA de un contrato ya guardado.*/
+    // Detalle de un contrato con sus valores y partidas.
     public function ver(int $id)
     {
-      
         $contrato = $this->contratoModel->unoConDetalle($id);
 
         if (! $contrato) {
@@ -87,21 +82,7 @@ class ContratosController extends BaseController
         ]);
     }
 
-    /**
-     * Paso 6: llena el machote de Word/Excel del tipo de contrato con los
-     * placeholders ya sustituidos y manda ese documento (.docx/.xlsx, NO
-     * un PDF) al navegador para descargar. Toda la lógica de "cómo" se
-     * llena vive en GeneradorPdfContrato (ver
-     * app/Libraries/GeneradorPdfContrato.php); aquí solo se juntan los
-     * datos que esa clase necesita (el contrato con join, el proveedor y
-     * el área completos —no solo sus nombres—, los valores dinámicos y las
-     * partidas) y se manda el archivo resultante.
-     *
-     * A propósito ya no se convierte a PDF aquí: el documento se entrega
-     * con sus cuadros de texto amarillos intactos para que el operador lo
-     * abra en Word/Excel, lo revise, llene a mano lo que falte y, ya
-     * conforme, lo guarde como PDF él mismo desde Office.
-     */
+    // Genera y descarga el .docx/.xlsx del contrato.
     public function exportarDocumento(int $id)
     {
         $contrato = $this->contratoModel->unoConDetalle($id);
@@ -128,30 +109,18 @@ class ContratosController extends BaseController
                 area: $area,
                 valoresDinamicos: $this->valorModel->paraContrato($id),
                 partidas: $this->bienesModel->paraContrato($id),
-                // WRITEPATH ya trae su propia "/" al final (ver app/Config/Paths.php),
-                // por eso aquí no se le pone otra antes de concatenar 'plantilla'.
                 rutaPlantilla: WRITEPATH . $tipoContrato['plantilla']
             );
         } catch (RuntimeException $e) {
-            // Los errores "esperables" (falta la plantilla, no es .docx, no
-            // tiene la tabla de partidas) ya vienen con un mensaje pensado
-            // para que el usuario entienda qué corregir, así que se le
-            // muestra tal cual en vez de un error genérico.
             return redirect()->to(site_url('contratos/' . $id))
                 ->with('error', $e->getMessage());
         }
 
-        // El documento puede ser .docx o .xlsx según la plantilla del tipo
-        // de contrato; se manda con su propia extensión y su propio
-        // Content-Type, no siempre PDF.
         $extension = strtolower(pathinfo($rutaDocumento, PATHINFO_EXTENSION));
         $tipoMime  = $extension === 'docx'
             ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
             : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-        // download() manda el archivo con los encabezados HTTP correctos
-        // para que el navegador lo baje (Content-Type, Content-Disposition
-        // con el nombre de archivo, etc.).
         $nombreDescarga = $contrato['folio'] . '.' . $extension;
 
         return $this->response->download($rutaDocumento, null)
@@ -159,12 +128,7 @@ class ContratosController extends BaseController
             ->setContentType($tipoMime);
     }
 
-    /**
-     * Sin "?tipo_contrato_id=": solo muestra el selector de tipo.
-     * Con "?tipo_contrato_id=X" válido: muestra el formulario completo,
-     * con los campos fijos, los dinámicos de este tipo y la tabla de
-     * partidas (bienes).
-     */
+    // Formulario de alta.
     public function nuevo()
     {
         $tipos = $this->tipoContratoModel->where('activo', 1)->findAll();
@@ -177,10 +141,6 @@ class ContratosController extends BaseController
         if ($tipoContratoId > 0) {
             $tipoContrato = $this->tipoContratoModel->find($tipoContratoId);
 
-            // Un tipo de contrato desactivado no debe poder usarse para
-            // contratos NUEVOS (pero los contratos viejos que ya lo usan
-            // siguen pudiendo editarse: ver editar() más abajo, que no
-            // tiene esta restricción a propósito).
             if ($tipoContrato && $tipoContrato['activo']) {
                 $camposDinamicos = $this->camposDinamicosDelTipo($tipoContratoId);
                 $opcionesListas  = $this->opcionesListasPara($camposDinamicos);
@@ -189,9 +149,6 @@ class ContratosController extends BaseController
             }
         }
 
-        // Si venimos de un error de validación, old('bienes') trae las
-        // filas que el usuario ya había llenado; si no, arrancamos con
-        // una fila vacía para que la tabla no se vea vacía al abrir.
         $filasBienesPrevias = $this->request->getOldInput('bienes') ?: [[]];
 
         return view('contratos/crear', [
@@ -206,23 +163,7 @@ class ContratosController extends BaseController
         ]);
     }
 
-    /**
-     * Paso 4: formulario para editar un contrato que ya existe. Reutiliza
-     * el mismo partial de formulario que nuevo() (ver
-     * app/Views/contratos/_formulario.php), pero con dos diferencias
-     * importantes:
-     *
-     *  1) El tipo de contrato NO se puede cambiar aquí. Cambiar de tipo
-     *     cambiaría qué campos dinámicos aplican, y los valores ya
-     *     guardados quedarían huérfanos (le pertenecen a los campos del
-     *     tipo ANTERIOR). Si de verdad se capturó mal el tipo, lo más
-     *     seguro es eliminar este contrato y crear uno nuevo del tipo
-     *     correcto, no "convertirlo".
-     *  2) Los campos y las partidas vienen precargados con lo que ya
-     *     había guardado (o con lo último que el usuario escribió, si
-     *     venimos de un error de validación: old() siempre gana sobre lo
-     *     que ya había en la base de datos).
-     */
+    // Formulario de edición precargado.
     public function editar(int $id)
     {
         $contrato = $this->contratoModel->find($id);
@@ -237,17 +178,11 @@ class ContratosController extends BaseController
         $camposDinamicos = $this->camposDinamicosDelTipo($contrato['tipo_contrato_id']);
         $opcionesListas  = $this->opcionesListasPara($camposDinamicos);
 
-        // Los valores dinámicos ya guardados se acomodan como
-        // [campo_id => valor] para que la vista pueda hacer
-        // $valoresCampos[$campo['id']] ?? '' al dibujar cada input.
         $valoresCampos = [];
         foreach ($this->valorModel->paraContrato($id) as $valorGuardado) {
             $valoresCampos[$valorGuardado['campo_id']] = $valorGuardado['valor'];
         }
 
-        // old('campos.X') gana si venimos de un error de validación (el
-        // usuario ya había escrito algo distinto); si no, se usa lo que
-        // ya estaba guardado.
         foreach ($camposDinamicos as $campo) {
             $valorViejo = old('campos.' . $campo['id']);
             if ($valorViejo !== null) {
@@ -255,8 +190,6 @@ class ContratosController extends BaseController
             }
         }
 
-        // Mismo criterio para las partidas: old('bienes') si venimos de
-        // un error, si no, las partidas que ya tenía el contrato.
         $filasBienesPrevias = $this->request->getOldInput('bienes')
             ?: $this->bienesModel->paraContrato($id);
 
@@ -273,6 +206,7 @@ class ContratosController extends BaseController
         ]);
     }
 
+    // Valida y guarda un contrato nuevo con sus partidas.
     public function create()
     {
         $tipoContratoId = (int) $this->request->getPost('tipo_contrato_id');
@@ -283,10 +217,6 @@ class ContratosController extends BaseController
                 ->with('error', 'Selecciona un tipo de contrato válido.');
         }
 
-        // Sin estas dos piezas el folio sale vacío/roto (ej. "/PF/-000/2026")
-        // y, como "folio" es UNIQUE, el segundo intento de este mismo tipo
-        // choca contra el primero y ya no deja guardar nada. Mejor cortar
-        // aquí con un mensaje claro que explicar un error de base de datos.
         if (empty($tipoContrato['prefijo_fijo']) || empty($tipoContrato['siglas_procedimiento'])) {
             return redirect()->to(site_url('contratos/nuevo'))
                 ->with('error', 'El tipo de contrato "' . $tipoContrato['nombre'] . '" todavía no '
@@ -339,10 +269,6 @@ class ContratosController extends BaseController
                 ->with('errores_validacion', $errores);
         }
 
-        // Los montos NUNCA se toman de lo que mandó el navegador: se
-        // recalculan aquí, a partir de las partidas ya validadas, para
-        // que nadie pueda alterar un total con las herramientas del
-        // navegador o con un formulario armado a mano.
         $subtotal = 0.0;
         foreach ($partidasValidas as $partida) {
             $subtotal += $partida['importe'];
@@ -355,27 +281,14 @@ class ContratosController extends BaseController
         $datosFijos['iva']      = $ivaMonto;
         $datosFijos['total']    = $total;
 
-        // El folio real (CT-2026-00001) se construye con el ID autoincremental,
-        // así que no se puede conocer ANTES de insertar la fila. Pero la
-        // columna "folio" es NOT NULL + UNIQUE, así que el primer INSERT
-        // necesita algún valor. Se usa un marcador temporal único (nunca
-        // puede chocar con un folio real, porque un folio real nunca
-        // empieza con "TMP-") y, ya con el ID en la mano, se actualiza al
-        // folio definitivo un renglón más abajo.
         $datosFijos['folio'] = 'TMP-' . bin2hex(random_bytes(8));
 
-        // Un solo contrato implica escribir en 3 tablas (contratos,
-        // contrato_valores y bienes_detalles). La transacción asegura que
-        // o se guardan las tres cosas, o no se guarda ninguna: nunca nos
-        // quedamos con un contrato "a medias".
         $db = db_connect();
         $db->transStart();
 
         $this->contratoModel->insert($datosFijos);
         $contratoId = $this->contratoModel->getInsertID();
 
-        // Ya con la fila insertada (y por lo tanto contada), se arma el
-        // folio real y se reemplaza el TMP- de arriba.
         $folio = $this->generarFolio($tipoContrato, $fuenteFinanciamiento);
         $this->contratoModel->update($contratoId, ['folio' => $folio]);
 
@@ -405,7 +318,10 @@ class ContratosController extends BaseController
                 'importe'         => $partida['importe'],
             ];
         }
-        $this->bienesModel->insertBatch($filasPartidas);
+        if ($filasPartidas && ! $this->bienesModel->skipValidation(true)->insertBatch($filasPartidas)) {
+            $db->transRollback();
+            return redirect()->back()->withInput()->with('error', 'No se pudieron guardar las partidas.');
+        }
 
         $db->transComplete();
 
@@ -419,15 +335,7 @@ class ContratosController extends BaseController
             ->with('mensaje', 'Contrato ' . $folio . ' registrado correctamente.');
     }
 
-    /**
-     * Paso 4: guarda los cambios de editar(). La validación es
-     * EXACTAMENTE la misma que create() (mismos métodos privados,
-     * mismas reglas) porque un contrato editado tiene que cumplir las
-     * mismas condiciones que uno nuevo; lo único que cambia es que aquí
-     * ya existe una fila que hay que ACTUALIZAR en vez de crear, y hay
-     * que reemplazar sus valores dinámicos y sus partidas en vez de
-     * insertarlos por primera vez.
-     */
+    // Valida y actualiza un contrato; reemplaza valores y partidas.
     public function actualizar(int $id)
     {
         $contrato = $this->contratoModel->find($id);
@@ -437,10 +345,6 @@ class ContratosController extends BaseController
                 ->with('error', 'Ese contrato no existe o fue eliminado.');
         }
 
-        // El tipo de contrato se toma del registro existente, NUNCA de lo
-        // que venga en el POST: así, aunque alguien manipule el formulario
-        // a mano, es imposible "cambiar" el tipo de un contrato por esta
-        // vía (ver el porqué en el comentario de editar()).
         $tipoContratoId = (int) $contrato['tipo_contrato_id'];
 
         $datosFijos = [
@@ -454,12 +358,6 @@ class ContratosController extends BaseController
             'condiciones_entrega' => $this->request->getPost('condiciones_entrega'),
         ];
 
-        // validate() de CodeIgniter corre las $validationRules del modelo
-        // sobre el array que se le pase, sin necesidad de insertar ni
-        // actualizar nada todavía: sirve igual para validar un INSERT que
-        // un UPDATE. Como 'tipo_contrato_id' es requerido por esas reglas
-        // pero aquí no viene en $datosFijos (no se edita), se agrega solo
-        // para la validación, sin que vaya a sobrescribirse de verdad.
         $datosParaValidar = $datosFijos + [
             'tipo_contrato_id'         => $tipoContratoId,
             'fuente_financiamiento_id' => $contrato['fuente_financiamiento_id'],
@@ -485,8 +383,6 @@ class ContratosController extends BaseController
                 ->with('errores_validacion', $errores);
         }
 
-        // Igual que en create(): los montos se recalculan siempre aquí,
-        // nunca se confía en nada que haya mandado el navegador.
         $subtotal = 0.0;
         foreach ($partidasValidas as $partida) {
             $subtotal += $partida['importe'];
@@ -504,12 +400,6 @@ class ContratosController extends BaseController
 
         $this->contratoModel->update($id, $datosFijos);
 
-        // Se borran TODOS los valores dinámicos y TODAS las partidas de
-        // este contrato y se vuelven a insertar los que vengan del
-        // formulario. Es más simple y más seguro que intentar calcular
-        // "qué cambió" fila por fila, y como todo esto vive dentro de la
-        // misma transacción, si algo falla a la mitad no se pierde nada:
-        // transStatus() === false revierte TODO, incluyendo los borrados.
         $this->valorModel->borrarDeContrato($id);
         if ($valoresValidos) {
             $filas = [];
@@ -538,7 +428,10 @@ class ContratosController extends BaseController
                 'importe'         => $partida['importe'],
             ];
         }
-        $this->bienesModel->insertBatch($filasPartidas);
+        if ($filasPartidas && ! $this->bienesModel->skipValidation(true)->insertBatch($filasPartidas)) {
+            $db->transRollback();
+            return redirect()->back()->withInput()->with('error', 'No se pudieron guardar las partidas.');
+        }
 
         $db->transComplete();
 
@@ -552,15 +445,7 @@ class ContratosController extends BaseController
             ->with('mensaje', 'Contrato ' . $contrato['folio'] . ' actualizado correctamente.');
     }
 
-    /**
-     * Paso 4: "eliminar" un contrato. Gracias a useSoftDeletes=true en
-     * ContratosModel, delete($id) NO hace un DELETE de SQL: hace un
-     * UPDATE que le pone fecha a "deleted_at". El contrato deja de salir
-     * en index()/ver() (y el folio queda libre para... en realidad no se
-     * reutiliza, porque el folio se arma con el id autoincremental, que
-     * nunca se repite), pero la fila y todo su historial (valores,
-     * partidas) se quedan intactos en la base de datos.
-     */
+    // Borrado lógico del contrato.
     public function eliminar(int $id)
     {
         $contrato = $this->contratoModel->find($id);
@@ -576,38 +461,33 @@ class ContratosController extends BaseController
             ->with('mensaje', 'Contrato ' . $contrato['folio'] . ' eliminado.');
     }
 
-    /**
-     * Arma el folio real del contrato, ej. "TEM/CAS/FORTAMUN/CP-002/2026":
-     *
-     *   {prefijo_fijo del tipo}/{clave de la fuente}/{siglas del tipo}-{consecutivo}/{año}
-     *
-     * El consecutivo se cuenta por SIGLAS DE PROCEDIMIENTO (no por tipo de
-     * contrato ni por fuente): si dos tipos distintos comparten las mismas
-     * siglas (ej. "aislada" y "con anticipo" son ambas IRNP), cuentan
-     * sobre el mismo consecutivo. Se reinicia cada año. Como esto se
-     * llama DESPUÉS de insertar el contrato (ver create()), el propio
-     * contrato recién insertado ya está incluido en el conteo, así que no
-     * hace falta sumarle 1 aparte.
-     */
+    // Folio: prefijo/fuente/siglas-consecutivo/año (máximo + 1).
     private function generarFolio(array $tipoContrato, array $fuenteFinanciamiento): string
     {
         $anio   = date('Y');
         $siglas = $tipoContrato['siglas_procedimiento'] ?? '';
 
-        $consecutivo = $this->contratoModel
-            ->select('contratos.id')
+        $folios = $this->contratoModel
+            ->withDeleted()
+            ->select('contratos.folio')
             ->join('tipos_contrato', 'tipos_contrato.id = contratos.tipo_contrato_id')
             ->where('tipos_contrato.siglas_procedimiento', $siglas)
-            ->where('YEAR(contratos.created_at)', $anio)
-            ->countAllResults();
+            ->like('contratos.folio', '/' . $anio, 'before')
+            ->findAll();
+
+        $maximo = 0;
+        foreach ($folios as $fila) {
+            if (preg_match('/-(\d+)\/' . $anio . '$/', $fila['folio'], $m)) {
+                $maximo = max($maximo, (int) $m[1]);
+            }
+        }
+        $consecutivo = $maximo + 1;
 
         return ($tipoContrato['prefijo_fijo'] ?? '') . '/' . ($fuenteFinanciamiento['clave'] ?? '')
             . '/' . $siglas . '-' . str_pad((string) $consecutivo, 3, '0', STR_PAD_LEFT) . '/' . $anio;
     }
 
-    /**
-     * Valida cada valor dinámico según el tipo_dato de su campo.
-     */
+    // Valida los campos propios del tipo de contrato.
     private function validarCamposDinamicos(array $camposDinamicos, array $valoresEnviados): array
     {
         $valores = [];
@@ -641,14 +521,7 @@ class ContratosController extends BaseController
         return [$valores, $errores];
     }
 
-    /**
-     * Valida las filas de la tabla de "Partidas" (bienes). Una fila
-     * completamente vacía se ignora en silencio (es una fila extra que
-     * el usuario no llegó a usar); si tiene algo, todos sus campos
-     * obligatorios deben venir correctos.
-     *
-     * Devuelve [filas_validas_con_importe_calculado, errores].
-     */
+    // Valida las partidas; devuelve [válidas, errores].
     private function validarBienes(array $filas): array
     {
         $validas = [];
@@ -661,7 +534,6 @@ class ContratosController extends BaseController
             $cantidad      = trim((string) ($fila['cantidad'] ?? ''));
             $precioUnitario = trim((string) ($fila['precio_unitario'] ?? ''));
 
-            // Fila completamente vacía: se ignora, no es un error.
             if ($descripcion === '' && $unidadMedida === '' && $cantidad === '' && $precioUnitario === '') {
                 continue;
             }
@@ -709,14 +581,7 @@ class ContratosController extends BaseController
         return [$validas, $errores];
     }
 
-    /**
-     * Los campos dinámicos (campos_formulario) de un tipo de contrato,
-     * ya filtrados para quitar cualquiera que por error tenga el mismo
-     * nombre que una columna fija (ver CAMPOS_RESERVADOS). La usan
-     * nuevo(), create(), editar() y actualizar(): estar en un solo lugar
-     * evita que un día se actualice el filtro en 3 de los 4 métodos y se
-     * quede desactualizado en el cuarto.
-     */
+    // Campos activos del tipo de contrato.
     private function camposDinamicosDelTipo(int $tipoContratoId): array
     {
         return array_values(array_filter(
@@ -725,13 +590,7 @@ class ContratosController extends BaseController
         ));
     }
 
-    /**
-     * Para cada campo dinámico de tipo "lista" (por ejemplo, un campo que
-     * se llena eligiendo un proveedor o un área de una lista desplegable),
-     * trae las opciones de su catálogo de origen. Se agrupa por
-     * "origen_lista" para no volver a consultar el mismo catálogo dos
-     * veces si dos campos distintos usan, por ejemplo, ambos "proveedores".
-     */
+    // Opciones de los campos tipo lista.
     private function opcionesListasPara(array $camposDinamicos): array
     {
         $opcionesListas = [];
@@ -746,7 +605,7 @@ class ContratosController extends BaseController
         return $opcionesListas;
     }
 
-    /** Para cuando se agregue algún catálogo nuevo de donde salgan listas. */
+    // Opciones de un catálogo (proveedores, áreas, etc.).
     private function opcionesDeCatalogo(string $origen): array
     {
         return match ($origen) {
@@ -756,6 +615,7 @@ class ContratosController extends BaseController
         };
     }
 
+    // Comprueba que el valor exista en el catálogo.
     private function opcionValidaEnCatalogo(?string $origen, string $valorId): bool
     {
         if (! $origen || ! ctype_digit($valorId)) {
