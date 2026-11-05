@@ -9,10 +9,10 @@ class FuentesFinanciamientoSeeder extends Seeder
     public function run()
     {
         $fuentes = [
-            ['clave' => 'RP', 'nombre' => 'Recursos Propios'],
-            ['clave' => 'PF', 'nombre' => 'Participaciones Federales'],
-            ['clave' => 'FORTAMUN', 'nombre' => 'Fondo de Aportaciones para el Fortalecimiento de los Municipios'],
-            ['clave' => 'FAIS', 'nombre' => 'Fondo de Aportaciones para la Infraestructura Social Municipal y de las Demarcaciones Territoriales'],
+            ['clave' => 'RP', 'nombre' => 'RECURSOS PROPIOS'],
+            ['clave' => 'PF', 'nombre' => 'PARTICIPACIONES FEDERALES'],
+            ['clave' => 'FORTAMUN', 'nombre' => 'FONDO DE APORTACIONES PARA EL FORTALECIMIENTO DE LOS MUNICIPIOS'],
+            ['clave' => 'FAIS', 'nombre' => 'FONDO DE APORTACIONES PARA LA INFRAESTRUCTURA SOCIAL MUNICIPAL Y DE LAS DEMARCACIONES TERRITORIALES'],
         ];
 
         foreach ($fuentes as $fuente) {

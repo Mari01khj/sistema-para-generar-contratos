@@ -36,6 +36,7 @@ class FuentesFinanciamientoModel extends Model
         'clave'  => 'required|max_length[20]|is_unique[fuentes_financiamiento.clave,id,{id}]',
         'nombre' => 'required|max_length[150]',
     ];
+    
     protected $validationMessages   = [];
     protected $skipValidation       = false;
     protected $cleanValidationRules = true;
