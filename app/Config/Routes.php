@@ -55,7 +55,7 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
         $routes->group('areas', static function ($routes)
         {
             $routes->get('/', 'AreasController::index');
-            $routes->get('list', 'AreasController::listar');
+            $routes->get('areas/listar', 'AreasController::listar');
 
             $routes->post('crear', 'AreasController::create');
             $routes->post('actualizar/(:num)', 'AreasController::update/$1');

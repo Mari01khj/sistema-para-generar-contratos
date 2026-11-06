@@ -20,7 +20,7 @@
                         <th>Nombre</th>
                         <th>Correo</th>
                         <th>Estado</th>
-                        <th>Acciones</th>
+                        <th class="no-orden">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="tbodyUsuarios">
@@ -125,12 +125,7 @@ function cargarUsuarios() {
     .then(response => response.json())
     .then(data => {
      
-        if ($.fn.DataTable && $.fn.DataTable.isDataTable('#tablaUsuarios')) {
-            $('#tablaUsuarios').DataTable().clear().destroy();
-        }
-        {
-            $('#tablaUsuarios').DataTable().clear().destroy();
-        }
+        TablaDatos.limpiar('#tablaUsuarios');
         
         const tbody = document.getElementById('tbodyUsuarios');
         tbody.innerHTML = ''; 
@@ -157,16 +152,7 @@ function cargarUsuarios() {
             `;
         });
 
-        // Inicializar DataTable
-        setTimeout(() => {
-            if ($.fn.DataTable) {
-                $('#tablaUsuarios').DataTable({
-                    "language": {
-                        "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
-                    }
-                });
-            }
-        }, 100);
+        TablaDatos.activar('#tablaUsuarios');
     })
     .catch(error => console.error("Error cargando la tabla:", error));
 }

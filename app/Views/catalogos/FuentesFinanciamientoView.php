@@ -19,7 +19,7 @@
                         <th>Clave</th>
                         <th>Nombre</th>
                         <th>Estado</th>
-                        <th>Acciones</th>
+                        <th class="no-orden">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="tbodyFuentes">
@@ -110,9 +110,7 @@ function cargarFuentes()
     .then(response => response.json())
     .then(data => {
 
-        if ($.fn.DataTable && $.fn.DataTable.isDataTable('#tablaFuentes')) {
-            $('#tablaFuentes').DataTable().clear().destroy();
-        }
+        TablaDatos.limpiar('#tablaFuentes');
 
         const tbody = document.getElementById('tbodyFuentes');
         tbody.innerHTML = '';
@@ -137,17 +135,7 @@ function cargarFuentes()
             `;
         });
 
-        setTimeout(() => {
-            if ($.fn.DataTable) {
-                $('#tablaFuentes').DataTable({
-                    "language": {
-                        "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
-                    }
-                });
-            } else {
-                console.error("DataTables no está cargado.");
-            }
-        }, 100);
+        TablaDatos.activar('#tablaFuentes');
     })
     .catch(error => console.error("Error cargando la tabla:", error));
 }

@@ -13,6 +13,7 @@
     <title>Acceso al Sistema </title>
 
     <link href="<?= base_url('css/sb-admin-2.min.css') ?>" rel="stylesheet">
+    <link href="<?= base_url('css/tema-ejecutivo.css') ?>" rel="stylesheet">
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 

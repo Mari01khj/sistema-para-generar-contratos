@@ -14,7 +14,7 @@
 <div class="card shadow mb-4">
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-bordered" id="tablaAreas" width="100%" cellspacing="0">
+            <table class="table table-bordered table-hover" id="tablaAreas" width="100%" cellspacing="0">
                 <thead>
                     <tr>
                         <th>Nombre del Área</th>
@@ -23,8 +23,7 @@
                         <th>Estado</th>
                     </tr>
                 </thead>
-                <tbody id="tbodyAreas">
-                </tbody>
+                <tbody id="tbodyAreas"></tbody>
             </table>
         </div>
     </div>
@@ -58,6 +57,7 @@
                 </form>
                 <div id="alertaErrorModal" class="alert alert-danger d-none mt-3"></div>
             </div>
+
             <div class="modal-footer flex-column align-items-stretch">
                 <div class="d-flex justify-content-between mb-2">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
@@ -100,12 +100,9 @@ function cargarAreas()
     })
     .then(response => response.json())
     .then(data => {
+        TablaDatos.limpiar('#tablaAreas');
         const tbody = document.getElementById('tbodyAreas');
         tbody.innerHTML = '';
-
-        if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Sin áreas.</td></tr>';
-        }
 
         data.forEach(area => {
             const estado = area.activo == 1
@@ -123,6 +120,8 @@ function cargarAreas()
             `;
             tbody.appendChild(fila);
         });
+
+        TablaDatos.activar('#tablaAreas');
     })
     .catch(error => console.error("Error cargando la tabla:", error));
 }
@@ -134,33 +133,37 @@ function abrirModal(area)
     document.getElementById('formArea').reset();
     document.getElementById('alertaErrorModal').classList.add('d-none');
 
-    if (area) {
-        document.getElementById('tituloModalArea').textContent = 'Editar Área';
-        document.getElementById('campo_id').value = area.id;
-        document.getElementById('campo_nombre_area').value = area.nombre_area;
-        document.getElementById('campo_titular_area').value = area.titular_area;
-        document.getElementById('campo_cargo_titular').value = area.cargo_titular;
+    if (area) 
+        {
+            document.getElementById('tituloModalArea').textContent = 'Editar Área';
+            document.getElementById('campo_id').value = area.id;
+            document.getElementById('campo_nombre_area').value = area.nombre_area;
+            document.getElementById('campo_titular_area').value = area.titular_area;
+            document.getElementById('campo_cargo_titular').value = area.cargo_titular;
 
-        document.getElementById('btnDesactivar').classList.remove('d-none');
-        document.getElementById('btnEliminar').classList.remove('d-none');
-        document.getElementById('textoDesactivar').textContent = area.activo == 1 ? 'Desactivar' : 'Activar';
-    } else {
-        document.getElementById('tituloModalArea').textContent = 'Registrar Nueva Área';
-        document.getElementById('campo_id').value = '';
-        document.getElementById('btnDesactivar').classList.add('d-none');
-        document.getElementById('btnEliminar').classList.add('d-none');
-    }
+            document.getElementById('btnDesactivar').classList.remove('d-none');
+            document.getElementById('btnEliminar').classList.remove('d-none');
+            document.getElementById('textoDesactivar').textContent = area.activo == 1 ? 'Desactivar' : 'Activar';
+        } 
+    else 
+        {
+            document.getElementById('tituloModalArea').textContent = 'Registrar Nueva Área';
+            document.getElementById('campo_id').value = '';
+            document.getElementById('btnDesactivar').classList.add('d-none');
+            document.getElementById('btnEliminar').classList.add('d-none');
+        }
 
     $('#modalArea').modal('show');
 }
 
 function datosFormulario()
 {
-    return {
-        nombre_area:   document.getElementById('campo_nombre_area').value,
-        titular_area:  document.getElementById('campo_titular_area').value,
-        cargo_titular: document.getElementById('campo_cargo_titular').value
-    };
+    return 
+        {
+            nombre_area:   document.getElementById('campo_nombre_area').value,
+            titular_area:  document.getElementById('campo_titular_area').value,
+            cargo_titular: document.getElementById('campo_cargo_titular').value
+        };
 }
 
 function guardarArea()

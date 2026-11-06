@@ -38,7 +38,7 @@
                 <thead>
                     <tr>
                         <th>Nombre</th>
-                        <th style="width: 10%;">Acciones</th>
+                        <th class="no-orden" style="width: 10%;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="tbodyUnidades"></tbody>
@@ -63,9 +63,7 @@ function cargarUnidades() {
     fetch('<?= base_url('unidades-medida/list') ?>', { headers: { 'Accept': 'application/json' } })
         .then(response => response.json())
         .then(data => {
-            if ($.fn.DataTable && $.fn.DataTable.isDataTable('#tablaUnidades')) {
-                $('#tablaUnidades').DataTable().clear().destroy();
-            }
+            TablaDatos.limpiar('#tablaUnidades');
 
             const tbody = document.getElementById('tbodyUnidades');
             tbody.innerHTML = '';
@@ -83,14 +81,7 @@ function cargarUnidades() {
                 `;
             });
 
-            setTimeout(() => {
-                if ($.fn.DataTable) {
-                    $('#tablaUnidades').DataTable({
-                        "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
-                        "order": [[0, 'asc']]
-                    });
-                }
-            }, 100);
+            TablaDatos.activar('#tablaUnidades', { order: [[0, 'asc']] });
         })
         .catch(error => console.error("Error cargando unidades:", error));
 }

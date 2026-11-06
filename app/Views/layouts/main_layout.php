@@ -25,6 +25,8 @@
     <!-- CSS de SB Admin 2 -->
 
     <link href="<?= base_url('css/sb-admin-2.min.css') ?>" rel="stylesheet">
+    <link href="<?= base_url('vendor/datatables/dataTables.bootstrap4.min.css') ?>" rel="stylesheet">
+    <link href="<?= base_url('css/tema-ejecutivo.css') ?>" rel="stylesheet">
 
     <style>
         #contenedorToasts {
@@ -182,6 +184,39 @@
 
     <!-- JS de SB Admin 2 -->
     <script src="<?= base_url('js/sb-admin-2.min.js') ?>"></script>
+
+    <script>
+        // Tablas: búsqueda + paginación en español. Uso: TablaDatos.activar('#id') tras llenar el tbody.
+        window.TablaDatos = {
+            idioma: {
+                search: 'Buscar:', lengthMenu: 'Mostrar _MENU_ registros',
+                info: 'Mostrando _START_ a _END_ de _TOTAL_', infoEmpty: 'Sin registros',
+                infoFiltered: '(filtrado de _MAX_)', zeroRecords: 'No se encontraron resultados',
+                emptyTable: 'Sin registros', paginate: { first: '«', last: '»', next: '›', previous: '‹' }
+            },
+            limpiar: function (sel) {
+                if ($.fn.DataTable.isDataTable(sel)) { $(sel).DataTable().clear().destroy(); }
+            },
+            activar: function (sel, opciones) {
+                const sinOrden = [];
+                $(sel).find('thead th').each(function (i) {
+                    if (this.classList.contains('no-orden') || this.textContent.trim() === '') { sinOrden.push(i); }
+                });
+                this.limpiar(sel);
+                return $(sel).DataTable(Object.assign({
+                    language: this.idioma, pageLength: 10, order: [],
+                    columnDefs: [{ orderable: false, targets: sinOrden }]
+                }, opciones || {}));
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('table.tabla-datos').forEach(function (t) {
+                if (t.id === '') { t.id = 'tabla-' + Math.random().toString(36).slice(2, 8); }
+                TablaDatos.activar('#' + t.id);
+            });
+        });
+    </script>
 
     <script>
      

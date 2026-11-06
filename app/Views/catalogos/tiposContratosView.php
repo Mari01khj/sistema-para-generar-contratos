@@ -28,7 +28,7 @@
             <p class="text-muted mb-0">Todavía no hay tipos de contrato. Crea el primero con el botón de arriba.</p>
         <?php else: ?>
             <div class="table-responsive">
-                <table class="table table-bordered">
+                <table class="table table-bordered tabla-datos">
                     <thead>
                         <tr>
                             <th>Nombre</th>

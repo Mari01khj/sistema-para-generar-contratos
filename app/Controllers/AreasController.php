@@ -15,14 +15,15 @@ class AreasController extends BaseController
 
     public function index()
     {
-        return view('catalogos/AreasView', [
-            'titulo' => 'Catálogo de Áreas'
-        ]);
+    return view('catalogos/AreasView', ['titulo' => 'Catálogo de Áreas',]);
     }
 
     public function listar()
     {
-        $areas = $this->areaModel->findAll();
+        $areas = $this->areaModel
+        ->orderBy('nombre_area', 'ASC')
+        ->findAll();
+
         return $this->response->setJSON($areas);
     }
 

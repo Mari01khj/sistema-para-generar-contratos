@@ -142,12 +142,9 @@ function cargarProveedores()
     .then(response => response.json())
     .then(data =>
     {
+        TablaDatos.limpiar('#tablaProveedores');
         const tbody = document.getElementById('tbodyProveedores');
         tbody.innerHTML = '';
-
-        if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Sin proveedores.</td></tr>';
-        }
 
         data.forEach(proveedor =>
         {
@@ -168,6 +165,8 @@ function cargarProveedores()
             `;
             tbody.appendChild(fila);
         });
+
+        TablaDatos.activar('#tablaProveedores');
     })
     .catch(error => console.error("Error cargando la tabla:", error));
 }

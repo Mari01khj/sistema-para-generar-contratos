@@ -34,7 +34,7 @@
             </p>
         <?php else: ?>
             <div class="table-responsive">
-                <table class="table table-bordered align-middle">
+                <table class="table table-bordered align-middle tabla-datos">
                     <thead>
                         <tr>
                             <th style="width: 60px;">Orden</th>

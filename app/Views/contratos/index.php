@@ -18,7 +18,7 @@
             <p class="text-muted mb-0">Todavía no hay contratos. Crea el primero con el botón de arriba.</p>
         <?php else: ?>
             <div class="table-responsive">
-                <table class="table table-bordered align-middle">
+                <table class="table table-bordered align-middle tabla-datos">
                     <thead>
                         <tr>
                             <th>Folio</th>
@@ -28,7 +28,7 @@
                             <th class="text-right">Total</th>
                             <th>Estado</th>
                             <th>Creado</th>
-                            <th>Acciones</th>
+                            <th class="no-orden">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
