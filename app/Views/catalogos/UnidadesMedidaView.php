@@ -118,8 +118,8 @@ function guardarUnidad() {
     .catch(error => console.error('Error en fetch:', error));
 }
 
-function eliminarUnidad(id) {
-    if (! confirm("¿Eliminar esta unidad de medida? Los bienes/servicios que ya la usan se quedan sin unidad.")) {
+async function eliminarUnidad(id) {
+    if (!(await confirmar("¿Eliminar esta unidad de medida? Los bienes/servicios que ya la usan se quedan sin unidad."))) {
         return;
     }
 

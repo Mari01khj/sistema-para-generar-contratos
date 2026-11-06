@@ -83,6 +83,27 @@ class FuentesFinanciamientoController extends BaseController
         ]);
     }
 
+    public function cambiarEstado($id = null)
+    {
+        $fuente = $id !== null ? $this->fuenteModel->find($id) : null;
+
+        if (! $fuente) {
+            return $this->response->setStatusCode(404)->setJSON([
+                'status'  => 404,
+                'message' => 'Fuente de financiamiento no encontrada.'
+            ]);
+        }
+
+        $nuevoEstado = $fuente['activo'] ? 0 : 1;
+        $this->fuenteModel->update($id, ['activo' => $nuevoEstado]);
+
+        return $this->response->setStatusCode(200)->setJSON([
+            'status'  => 200,
+            'activo'  => $nuevoEstado,
+            'message' => $nuevoEstado ? 'Fuente activada.' : 'Fuente desactivada.'
+        ]);
+    }
+
     public function delete($id = null)
     {
         if ($id === null || !$this->fuenteModel->find($id)) {

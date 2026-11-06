@@ -60,3 +60,8 @@ table.dataTable thead .sorting_desc:before, table.dataTable thead .sorting_desc:
 .dataTables_wrapper .dataTables_length select { border-radius: .35rem; }
 .dataTables_wrapper .dataTables_info { color: #6c757d; font-size: .85rem; }
 .table td { color: #2b3a45; }
+
+/* Ventana de confirmación */
+.confirmar-icono { width: 64px; height: 64px; margin: 0 auto; border-radius: 50%; background: #fdecea; color: #dc3545; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+#modalConfirmar .modal-content { border-radius: .75rem; }
+#modalConfirmar h5 { color: #1f2d3a; }

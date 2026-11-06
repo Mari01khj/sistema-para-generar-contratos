@@ -337,9 +337,9 @@ function cambiarEstado() {
     .catch(error => console.error("Error cambiando estado:", error));
 }
 
-function eliminar() {
+async function eliminar() {
     if (!registroActual) return;
-    if (!confirm('¿Eliminar este bien/servicio? Esta acción no se puede deshacer.')) return;
+    if (!(await confirmar('¿Eliminar este bien/servicio? Esta acción no se puede deshacer.'))) return;
 
     fetch(`<?= base_url('bienes-servicios/eliminar/') ?>${registroActual.id}`, {
         method: 'POST',

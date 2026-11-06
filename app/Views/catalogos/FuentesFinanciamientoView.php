@@ -3,265 +3,214 @@
 <?= $this->section('content') ?>
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <h1 class="h3 mb-0 text-gray-800"><?= esc($titulo) ?></h1>
-    <button class="btn btn-primary shadow-sm" data-toggle="modal" data-target="#modalNuevaFuente">
+    <button class="btn btn-primary shadow-sm" id="btnNuevo">
         <i class="fas fa-plus fa-sm text-white-50"></i> Nueva Fuente
     </button>
 </div>
 
-<!-- Tabla de fuentes -->
+<p class="text-muted">Haz clic en una fila para editar, desactivar o eliminar esa fuente.</p>
+
 <div class="card shadow mb-4">
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-bordered" id="tablaFuentes" width="100%" cellspacing="0">
                 <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Clave</th>
                         <th>Nombre</th>
                         <th>Estado</th>
-                        <th class="no-orden">Acciones</th>
                     </tr>
                 </thead>
-                <tbody id="tbodyFuentes">
-                </tbody>
+                <tbody id="tbodyFuentes"></tbody>
             </table>
         </div>
     </div>
 </div>
 
-<!-- Modal para crear -->
-<div class="modal fade" id="modalNuevaFuente" tabindex="-1" role="dialog" aria-hidden="true">
+<!-- Modal: alta y edición comparten el mismo formulario -->
+<div class="modal fade" id="modalFuente" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Registrar Nueva Fuente de Financiamiento</h5>
+                <h5 class="modal-title" id="tituloModalFuente">Fuente de financiamiento</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
                 <form id="formFuente">
+                    <input type="hidden" id="campo_id">
                     <div class="form-group">
                         <label>Clave (va en el folio, ej. FORTAMUN)</label>
-                        <input type="text" class="form-control" id="clave" style="text-transform: uppercase;" required>
+                        <input type="text" class="form-control" id="campo_clave" style="text-transform: uppercase;" required>
                     </div>
                     <div class="form-group">
                         <label>Nombre completo</label>
-                        <input type="text" class="form-control" id="nombre" required>
+                        <input type="text" class="form-control" id="campo_nombre" required>
                     </div>
                 </form>
-                <div id="alertaError" class="alert alert-danger d-none mt-3"></div>
+                <div id="alertaErrorModal" class="alert alert-danger d-none mt-3"></div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- Modal para Editar -->
-<div class="modal fade" id="modalEditarFuente" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Editar Fuente de Financiamiento</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+            <div class="modal-footer flex-column align-items-stretch">
+                <div class="d-flex justify-content-between mb-2">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
+                </div>
+                <button type="button" class="btn btn-outline-warning d-none" id="btnDesactivar">
+                    <i class="fas fa-ban"></i> <span id="textoDesactivar">Desactivar</span>
                 </button>
-            </div>
-            <div class="modal-body">
-                <form id="formEditarFuente">
-                    <input type="hidden" id="edit_id">
-
-                    <div class="form-group">
-                        <label>Clave (va en el folio)</label>
-                        <input type="text" class="form-control" id="edit_clave" style="text-transform: uppercase;" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Nombre completo</label>
-                        <input type="text" class="form-control" id="edit_nombre" required>
-                    </div>
-                </form>
-                <div id="alertaErrorEdit" class="alert alert-danger d-none mt-3"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="btnActualizar">Actualizar</button>
+                <button type="button" class="btn btn-link text-danger d-none" id="btnEliminar">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+let fuenteActual = null;
+
+document.addEventListener("DOMContentLoaded", function () {
     cargarFuentes();
 
-    document.getElementById('btnGuardar').addEventListener('click', function() {
-        guardarFuente();
+    document.getElementById('btnNuevo').addEventListener('click', () => abrirModal(null));
+    document.getElementById('tbodyFuentes').addEventListener('click', function (e) {
+        const fila = e.target.closest('tr[data-item]');
+        if (!fila) return;
+        abrirModal(JSON.parse(fila.dataset.item));
     });
+
+    document.getElementById('btnGuardar').addEventListener('click', guardarFuente);
+    document.getElementById('btnDesactivar').addEventListener('click', cambiarEstado);
+    document.getElementById('btnEliminar').addEventListener('click', eliminarFuente);
 });
 
-function cargarFuentes()
-{
-    fetch('<?= base_url('fuentes-financiamiento/list') ?>',
-    {
-        headers: { 'Accept': 'application/json' }
-    })
+function cargarFuentes() {
+    fetch('<?= base_url('fuentes-financiamiento/list') ?>', { headers: { 'Accept': 'application/json' } })
     .then(response => response.json())
     .then(data => {
-
         TablaDatos.limpiar('#tablaFuentes');
-
         const tbody = document.getElementById('tbodyFuentes');
         tbody.innerHTML = '';
 
         data.forEach(fuente => {
-            let estado = fuente.activo == 1
+            const estado = fuente.activo == 1
                 ? '<span class="badge badge-success">Activo</span>'
                 : '<span class="badge badge-danger">Inactivo</span>';
 
-            tbody.innerHTML += `
-                <tr>
-                    <td>${fuente.id}</td>
-                    <td>${fuente.clave}</td>
-                    <td>${fuente.nombre}</td>
-                    <td>${estado}</td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="editarFuente(
-                        ${fuente.id}, '${fuente.clave}', '${fuente.nombre}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-danger" onclick="eliminarFuente(${fuente.id})" btn-sm"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
+            const fila = document.createElement('tr');
+            fila.dataset.item = JSON.stringify(fuente);
+            fila.innerHTML = `
+                <td>${fuente.clave}</td>
+                <td>${fuente.nombre}</td>
+                <td>${estado}</td>
             `;
+            tbody.appendChild(fila);
         });
 
         TablaDatos.activar('#tablaFuentes');
     })
-    .catch(error => console.error("Error cargando la tabla:", error));
+    .catch(error => console.error('Error cargando la tabla:', error));
 }
 
-function guardarFuente()
-{
-    const datosFuente =
-    {
-        clave: document.getElementById('clave').value.toUpperCase(),
-        nombre: document.getElementById('nombre').value
-    };
+function abrirModal(fuente) {
+    fuenteActual = fuente;
 
-    fetch('<?= base_url('fuentes-financiamiento/crear') ?>',
-    {
-        method: 'POST',
-        headers:
-        {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify(datosFuente)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 201)
-        {
-            $('#modalNuevaFuente').modal('hide');
-            document.getElementById('formFuente').reset();
-            document.getElementById('alertaError').classList.add('d-none');
+    document.getElementById('formFuente').reset();
+    document.getElementById('alertaErrorModal').classList.add('d-none');
 
-            cargarFuentes();
-            mostrarToast(data.message, 'success');
-        }
-        else
-        {
-            let divError = document.getElementById('alertaError');
-            divError.innerHTML = data.message || 'Revisa los datos capturados.';
-            divError.classList.remove('d-none');
-        }
-    })
-    .catch(error => console.error('Error en fetch:', error));
-}
+    if (fuente) {
+        document.getElementById('tituloModalFuente').textContent = 'Editar Fuente de Financiamiento';
+        document.getElementById('campo_id').value = fuente.id;
+        document.getElementById('campo_clave').value = fuente.clave;
+        document.getElementById('campo_nombre').value = fuente.nombre;
 
-function eliminarFuente(id)
-{
-    if (confirm("¿Estás seguro de eliminar esta fuente de financiamiento?"))
-    {
-        fetch(`<?= base_url('fuentes-financiamiento/eliminar/') ?>${id}`,
-        {
-            method: 'POST',
-            headers:
-            {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 200)
-            {
-                mostrarToast(data.message, 'success');
-                cargarFuentes();
-            }
-            else
-            {
-                mostrarToast('Error: ' + data.message, 'danger');
-            }
-        })
-        .catch(error => console.error("Error al eliminar:", error));
+        document.getElementById('btnDesactivar').classList.remove('d-none');
+        document.getElementById('btnEliminar').classList.remove('d-none');
+        document.getElementById('textoDesactivar').textContent = fuente.activo == 1 ? 'Desactivar' : 'Activar';
+    } else {
+        document.getElementById('tituloModalFuente').textContent = 'Registrar Nueva Fuente de Financiamiento';
+        document.getElementById('campo_id').value = '';
+        document.getElementById('btnDesactivar').classList.add('d-none');
+        document.getElementById('btnEliminar').classList.add('d-none');
     }
-}
-function editarFuente(id, clave, nombre) {
-    document.getElementById('edit_id').value = id;
-    document.getElementById('edit_clave').value = clave;
-    document.getElementById('edit_nombre').value = nombre;
 
-    document.getElementById('alertaErrorEdit').classList.add('d-none');
-
-    $('#modalEditarFuente').modal('show');
+    $('#modalFuente').modal('show');
 }
 
-document.getElementById('btnActualizar').addEventListener('click', function()
-{
-    const id = document.getElementById('edit_id').value;
+function guardarFuente() {
+    const id  = document.getElementById('campo_id').value;
+    const url = id
+        ? `<?= base_url('fuentes-financiamiento/actualizar/') ?>${id}`
+        : `<?= base_url('fuentes-financiamiento/crear') ?>`;
 
-    const datosActualizados =
-    {
-        clave: document.getElementById('edit_clave').value.toUpperCase(),
-        nombre: document.getElementById('edit_nombre').value
-    };
+    const btn = document.getElementById('btnGuardar');
+    btn.disabled = true;
 
-    let btnActualizar = document.getElementById('btnActualizar');
-    btnActualizar.disabled = true;
-    btnActualizar.innerText = "Actualizando...";
-
-    fetch(`<?= base_url('fuentes-financiamiento/actualizar/') ?>${id}`,
-    {
+    fetch(url, {
         method: 'POST',
-        headers:
-        {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify(datosActualizados)
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({
+            clave:  document.getElementById('campo_clave').value.trim().toUpperCase(),
+            nombre: document.getElementById('campo_nombre').value.trim()
+        })
     })
     .then(response => response.json())
     .then(data => {
-        if (data.status === 200)
-        {
-            $('#modalEditarFuente').modal('hide');
+        if (data.status === 200 || data.status === 201) {
+            $('#modalFuente').modal('hide');
             cargarFuentes();
             mostrarToast(data.message, 'success');
-        }
-        else
-        {
-            let divError = document.getElementById('alertaErrorEdit');
-            divError.innerHTML = data.message || "Error de validación.";
-            divError.classList.remove('d-none');
+        } else {
+            const errores = data.errors ? Object.values(data.errors).join('<br>') : null;
+            const div = document.getElementById('alertaErrorModal');
+            div.innerHTML = errores || data.message || 'Error de validación.';
+            div.classList.remove('d-none');
         }
     })
     .catch(error => console.error('Error en fetch:', error))
-    .finally(() =>
-    {
-        btnActualizar.disabled = false;
-        btnActualizar.innerText = "Actualizar";
-    });
-});
+    .finally(() => { btn.disabled = false; });
+}
+
+function cambiarEstado() {
+    if (!fuenteActual) return;
+
+    fetch(`<?= base_url('fuentes-financiamiento/estado/') ?>${fuenteActual.id}`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 200) {
+            $('#modalFuente').modal('hide');
+            cargarFuentes();
+            mostrarToast(data.message, 'success');
+        } else {
+            mostrarToast('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => console.error('Error cambiando estado:', error));
+}
+
+async function eliminarFuente() {
+    if (!fuenteActual) return;
+    if (!(await confirmar('Se eliminará esta fuente de financiamiento. Esta acción no se puede deshacer.'))) return;
+
+    fetch(`<?= base_url('fuentes-financiamiento/eliminar/') ?>${fuenteActual.id}`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 200) {
+            $('#modalFuente').modal('hide');
+            cargarFuentes();
+            mostrarToast(data.message, 'success');
+        } else {
+            mostrarToast('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => console.error('Error al eliminar:', error));
+}
 </script>
 <?= $this->endSection() ?>

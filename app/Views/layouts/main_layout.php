@@ -172,6 +172,23 @@
 
     </a>
 
+    <!-- Ventana de confirmación (reemplaza al confirm() del navegador). -->
+    <div class="modal fade" id="modalConfirmar" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+            <div class="modal-content border-0 shadow-lg text-center">
+                <div class="modal-body pt-4 pb-3 px-4">
+                    <div class="confirmar-icono mb-3"><i class="fas fa-trash-alt"></i></div>
+                    <h5 class="font-weight-bold mb-2" id="confirmarTitulo">Confirmar</h5>
+                    <p class="text-muted mb-0" id="confirmarMensaje"></p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center pt-0 pb-4">
+                    <button type="button" class="btn btn-light px-4" id="confirmarCancelar">Cancelar</button>
+                    <button type="button" class="btn btn-danger px-4" id="confirmarAceptar">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Notificaciones (toasts): un solo contenedor para toda la app. -->
     <div id="contenedorToasts" aria-live="polite" aria-atomic="true"></div>
 
@@ -184,6 +201,31 @@
 
     <!-- JS de SB Admin 2 -->
     <script src="<?= base_url('js/sb-admin-2.min.js') ?>"></script>
+
+    <script>
+        // confirmar('mensaje', {titulo, aceptar}) -> Promise<boolean>. Formularios: data-confirmar="mensaje".
+        window.confirmar = function (mensaje, opciones) {
+            const o = Object.assign({ titulo: '¿Eliminar registro?', aceptar: 'Eliminar' }, opciones || {});
+            return new Promise(function (resolver) {
+                const $m = $('#modalConfirmar');
+                let respuesta = false;
+                $('#confirmarTitulo').text(o.titulo);
+                $('#confirmarMensaje').text(mensaje);
+                $('#confirmarAceptar').text(o.aceptar).off('click').on('click', function () { respuesta = true; $m.modal('hide'); });
+                $('#confirmarCancelar').off('click').on('click', function () { $m.modal('hide'); });
+                $m.off('hidden.bs.modal').on('hidden.bs.modal', function () { resolver(respuesta); });
+                $m.modal('show');
+            });
+        };
+
+        document.addEventListener('submit', function (e) {
+            const form = e.target;
+            const mensaje = form.getAttribute && form.getAttribute('data-confirmar');
+            if (!mensaje) { return; }
+            e.preventDefault();
+            confirmar(mensaje).then(function (ok) { if (ok) { form.removeAttribute('data-confirmar'); form.submit(); } });
+        });
+    </script>
 
     <script>
         // Tablas: búsqueda + paginación en español. Uso: TablaDatos.activar('#id') tras llenar el tbody.

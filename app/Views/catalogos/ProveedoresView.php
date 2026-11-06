@@ -284,10 +284,10 @@ function cambiarEstado()
     .catch(error => console.error("Error cambiando estado:", error));
 }
 
-function eliminarProveedor()
+async function eliminarProveedor()
 {
     if (!proveedorActual) return;
-    if (!confirm("¿Estás seguro de eliminar este proveedor?")) return;
+    if (!(await confirmar("¿Estás seguro de eliminar este proveedor?"))) return;
 
     fetch(`<?= base_url('proveedores/eliminar/') ?>${proveedorActual.id}`,
     {

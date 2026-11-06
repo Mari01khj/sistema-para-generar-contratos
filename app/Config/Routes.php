@@ -49,16 +49,18 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
             $routes->post('crear', 'ProveedoresController::create');
             $routes->get('list', 'ProveedoresController::listar');
             $routes->post('actualizar/(:num)', 'ProveedoresController::update/$1');
+            $routes->post('estado/(:num)', 'ProveedoresController::cambiarEstado/$1');
             $routes->post('eliminar/(:num)', 'ProveedoresController::delete/$1');
         });
 
         $routes->group('areas', static function ($routes)
         {
             $routes->get('/', 'AreasController::index');
-            $routes->get('areas/listar', 'AreasController::listar');
+            $routes->get('list', 'AreasController::listar');
 
             $routes->post('crear', 'AreasController::create');
             $routes->post('actualizar/(:num)', 'AreasController::update/$1');
+            $routes->post('estado/(:num)', 'AreasController::cambiarEstado/$1');
             $routes->post('eliminar/(:num)', 'AreasController::delete/$1');
         });
 
@@ -69,6 +71,7 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
 
             $routes->post('crear', 'FuentesFinanciamientoController::create');
             $routes->post('actualizar/(:num)', 'FuentesFinanciamientoController::update/$1');
+            $routes->post('estado/(:num)', 'FuentesFinanciamientoController::cambiarEstado/$1');
             $routes->post('eliminar/(:num)', 'FuentesFinanciamientoController::delete/$1');
         });
 

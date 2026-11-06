@@ -28,7 +28,7 @@
         <!-- además una segunda red de seguridad, para que no sea un clic -->
         <!-- accidental. -->
         <form method="POST" action="<?= site_url('contratos/' . $contrato['id'] . '/eliminar') ?>" class="d-inline"
-            onsubmit="return confirm('¿Eliminar el contrato <?= esc($contrato['folio'], 'js') ?>? Esta acción no se puede deshacer desde la pantalla.');">
+            data-confirmar="¿Eliminar el contrato <?= esc($contrato['folio'], 'attr') ?>? Esta acción no se puede deshacer desde la pantalla.">
             <button type="submit" class="btn btn-danger">
                 <i class="fas fa-trash"></i> Eliminar
             </button>

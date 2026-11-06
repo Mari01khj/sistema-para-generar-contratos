@@ -104,7 +104,7 @@
                                         </button>
                                     </form>
                                     <form method="POST" action="<?= site_url('tipos-contrato/' . $tipo['id'] . '/eliminar') ?>" class="d-inline"
-                                        onsubmit="return confirm('¿Eliminar este tipo de contrato? Si ya tiene contratos o campos asociados, no se podrá y habrá que desactivarlo en su lugar.');">
+                                        data-confirmar="¿Eliminar este tipo de contrato? Si ya tiene contratos o campos asociados, no se podrá y habrá que desactivarlo en su lugar.">
                                         <button type="submit" class="btn btn-sm btn-outline-danger mb-1">
                                             <i class="fas fa-trash"></i> Eliminar
                                         </button>

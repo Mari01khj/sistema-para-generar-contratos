@@ -197,9 +197,9 @@ function guardarUsuario() {
     });
 }
 
-function eliminarUsuario(id) 
+async function eliminarUsuario(id) 
 {
-    if (confirm("¿Estás seguro de eliminar este usuario?")) 
+    if (await confirmar("¿Estás seguro de eliminar este usuario?")) 
     {
         fetch(`<?= base_url('usuarios/eliminar/') ?>${id}`, 
         {

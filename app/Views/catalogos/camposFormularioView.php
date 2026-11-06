@@ -88,7 +88,7 @@
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <form action="<?= site_url('campos/' . $campo['id'] . '/eliminar') ?>" method="POST" class="d-inline"
-                                            onsubmit="return confirm('¿Eliminar el campo \"<?= esc($campo['etiqueta'], 'js') ?>\"? Los contratos que ya lo usan no se ven afectados.');">
+                                            data-confirmar="¿Eliminar el campo «<?= esc($campo['etiqueta'], 'attr') ?>»? Los contratos que ya lo usan no se ven afectados.">
                                             <button type="submit" class="btn btn-sm btn-outline-danger">
                                                 <i class="fas fa-trash"></i>
                                             </button>

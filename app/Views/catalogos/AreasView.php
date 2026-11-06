@@ -158,12 +158,11 @@ function abrirModal(area)
 
 function datosFormulario()
 {
-    return 
-        {
-            nombre_area:   document.getElementById('campo_nombre_area').value,
-            titular_area:  document.getElementById('campo_titular_area').value,
-            cargo_titular: document.getElementById('campo_cargo_titular').value
-        };
+    return {
+        nombre_area:   document.getElementById('campo_nombre_area').value,
+        titular_area:  document.getElementById('campo_titular_area').value,
+        cargo_titular: document.getElementById('campo_cargo_titular').value
+    };
 }
 
 function guardarArea()
@@ -224,10 +223,10 @@ function cambiarEstado()
     .catch(error => console.error("Error cambiando estado:", error));
 }
 
-function eliminarArea()
+async function eliminarArea()
 {
     if (!areaActual) return;
-    if (!confirm("¿Estás seguro de eliminar esta área?")) return;
+    if (!(await confirmar("¿Estás seguro de eliminar esta área?"))) return;
 
     fetch(`<?= base_url('areas/eliminar/') ?>${areaActual.id}`,
     {

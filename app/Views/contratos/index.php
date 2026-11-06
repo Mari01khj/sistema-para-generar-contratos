@@ -49,7 +49,7 @@
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <form method="POST" action="<?= site_url('contratos/' . $contrato['id'] . '/eliminar') ?>" class="d-inline"
-                                        onsubmit="return confirm('¿Eliminar el contrato <?= esc($contrato['folio'], 'js') ?>?');">
+                                        data-confirmar="¿Eliminar el contrato <?= esc($contrato['folio'], 'attr') ?>?">
                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
                                             <i class="fas fa-trash"></i>
                                         </button>
