@@ -129,5 +129,9 @@ $routes->group('', ['filter' => 'authFilter'], static function ($routes)
         $routes->get('(:num)/documento', 'ContratosController::exportarDocumento/$1', ['as' => 'contratoDocumento']);
         $routes->post('(:num)/actualizar', 'ContratosController::actualizar/$1');
         $routes->post('(:num)/eliminar', 'ContratosController::eliminar/$1');
+        $routes->post('(:num)/correccion', 'ContratosController::marcarEnCorreccion/$1');
+        $routes->post('(:num)/finalizar', 'ContratosController::finalizar/$1');
+        $routes->get('(:num)/archivo-final', 'ContratosController::archivoFinal/$1');
+        $routes->post('(:num)/reabrir', 'ContratosController::reabrir/$1');
     });
 });

@@ -223,7 +223,10 @@
             const mensaje = form.getAttribute && form.getAttribute('data-confirmar');
             if (!mensaje) { return; }
             e.preventDefault();
-            confirmar(mensaje).then(function (ok) { if (ok) { form.removeAttribute('data-confirmar'); form.submit(); } });
+            confirmar(mensaje, {
+                titulo: form.getAttribute('data-confirmar-titulo') || undefined,
+                aceptar: form.getAttribute('data-confirmar-boton') || undefined
+            }).then(function (ok) { if (ok) { form.removeAttribute('data-confirmar'); form.submit(); } });
         });
     </script>
 

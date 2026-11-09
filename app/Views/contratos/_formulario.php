@@ -28,7 +28,7 @@ $textoBoton    ??= 'Guardar contrato';
                     </select>
                 </div>
                 <div class="form-group col-md-6">
-                    <label>Área solicitante <span class="text-danger">*</span></label>
+                    <label>Área usuaria / requirente <span class="text-danger">*</span></label>
                     <?php $areaPrevia = old('area_solicitante_id') ?? ($valoresFijos['area_solicitante_id'] ?? null); ?>
                     <select name="area_solicitante_id" class="form-control" required>
                         <option value="">Selecciona...</option>
@@ -38,6 +38,22 @@ $textoBoton    ??= 'Guardar contrato';
                             </option>
                         <?php endforeach; ?>
                     </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label>Área técnica</label>
+                    <?php $areaTecnicaPrevia = old('area_tecnica_id') ?? ($valoresFijos['area_tecnica_id'] ?? null); ?>
+                    <select name="area_tecnica_id" class="form-control">
+                        <option value="">Igual al área usuaria</option>
+                        <?php foreach ($areas as $a): ?>
+                            <option value="<?= $a['id'] ?>" <?= $areaTecnicaPrevia == $a['id'] ? 'selected' : '' ?>>
+                                <?= esc($a['nombre_area']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="form-text text-muted">Solo si el área técnica es distinta de la usuaria.</small>
                 </div>
             </div>
 

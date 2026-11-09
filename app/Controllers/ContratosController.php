@@ -17,12 +17,15 @@ class ContratosController extends BaseController
 {
     private const TASA_IVA = 0.16;
 
+    private const CARPETA_FINALES = 'uploads/finales';
+
     private const CAMPOS_RESERVADOS = [
         'folio',
         'tipo_contrato_id',
         'fuente_financiamiento_id',
         'proveedor_id',
         'area_solicitante_id',
+        'area_tecnica_id',
         'descripcion_corta',
         'fecha_entrega',
         'lugar_entrega',
@@ -95,6 +98,7 @@ class ContratosController extends BaseController
         $tipoContrato = $this->tipoContratoModel->find($contrato['tipo_contrato_id']);
         $proveedor    = $this->proveedoresModel->find($contrato['proveedor_id']);
         $area         = $this->areasModel->find($contrato['area_solicitante_id']);
+        $areaTecnica  = $contrato['area_tecnica_id'] ? $this->areasModel->find($contrato['area_tecnica_id']) : null;
 
         if (empty($tipoContrato['plantilla'])) {
             return redirect()->to(site_url('contratos/' . $id))
@@ -109,7 +113,8 @@ class ContratosController extends BaseController
                 area: $area,
                 valoresDinamicos: $this->valorModel->paraContrato($id),
                 partidas: $this->bienesModel->paraContrato($id),
-                rutaPlantilla: WRITEPATH . $tipoContrato['plantilla']
+                rutaPlantilla: WRITEPATH . $tipoContrato['plantilla'],
+                areaTecnica: $areaTecnica ?: null
             );
         } catch (RuntimeException $e) {
             return redirect()->to(site_url('contratos/' . $id))
@@ -121,7 +126,7 @@ class ContratosController extends BaseController
             ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
             : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-        $nombreDescarga = $contrato['folio'] . '.' . $extension;
+        $nombreDescarga = str_replace('/', '-', $contrato['folio']) . '.' . $extension;
 
         return $this->response->download($rutaDocumento, null)
             ->setFileName($nombreDescarga)
@@ -171,6 +176,11 @@ class ContratosController extends BaseController
         if (! $contrato) {
             return redirect()->to(site_url('contratos'))
                 ->with('error', 'Ese contrato no existe o fue eliminado.');
+        }
+
+        if ($contrato['estado'] === 'finalizado') {
+            return redirect()->to(site_url('contratos/' . $id))
+                ->with('error', 'Un contrato finalizado ya no se puede editar. Pide a un administrador que lo reabra.');
         }
 
         $tipoContrato    = $this->tipoContratoModel->find($contrato['tipo_contrato_id']);
@@ -238,6 +248,7 @@ class ContratosController extends BaseController
             'fuente_financiamiento_id' => $fuenteFinanciamientoId,
             'proveedor_id'             => $this->request->getPost('proveedor_id'),
             'area_solicitante_id'      => $this->request->getPost('area_solicitante_id'),
+            'area_tecnica_id'          => $this->request->getPost('area_tecnica_id') ?: null,
             'descripcion_corta'        => $this->request->getPost('descripcion_corta'),
             'nombre_bien'              => $this->request->getPost('nombre_bien'),
             'fecha_entrega'            => $this->request->getPost('fecha_entrega') ?: null,
@@ -345,11 +356,17 @@ class ContratosController extends BaseController
                 ->with('error', 'Ese contrato no existe o fue eliminado.');
         }
 
+        if ($contrato['estado'] === 'finalizado') {
+            return redirect()->to(site_url('contratos/' . $id))
+                ->with('error', 'Un contrato finalizado ya no se puede editar. Pide a un administrador que lo reabra.');
+        }
+
         $tipoContratoId = (int) $contrato['tipo_contrato_id'];
 
         $datosFijos = [
             'proveedor_id'        => $this->request->getPost('proveedor_id'),
             'area_solicitante_id' => $this->request->getPost('area_solicitante_id'),
+            'area_tecnica_id'     => $this->request->getPost('area_tecnica_id') ?: null,
             'descripcion_corta'   => $this->request->getPost('descripcion_corta'),
             'nombre_bien'         => $this->request->getPost('nombre_bien'),
             'fecha_entrega'       => $this->request->getPost('fecha_entrega') ?: null,
@@ -455,10 +472,118 @@ class ContratosController extends BaseController
                 ->with('error', 'Ese contrato no existe o ya fue eliminado.');
         }
 
+        if ($contrato['estado'] === 'finalizado') {
+            return redirect()->to(site_url('contratos/' . $id))
+                ->with('error', 'Un contrato finalizado ya no se puede eliminar. Pide a un administrador que lo reabra.');
+        }
+
         $this->contratoModel->delete($id);
 
         return redirect()->to(site_url('contratos'))
             ->with('mensaje', 'Contrato ' . $contrato['folio'] . ' eliminado.');
+    }
+
+    // Pasa un borrador a "en corrección" (el usuario lo corrige en su equipo).
+    public function marcarEnCorreccion(int $id)
+    {
+        $contrato = $this->contratoModel->find($id);
+
+        if (! $contrato || $contrato['estado'] !== 'borrador') {
+            return redirect()->to(site_url('contratos/' . $id))
+                ->with('error', 'Solo un contrato en borrador se puede pasar a corrección.');
+        }
+
+        $this->contratoModel->update($id, ['estado' => 'en_correccion']);
+
+        return redirect()->to(site_url('contratos/' . $id))
+            ->with('mensaje', 'El contrato quedó en corrección.');
+    }
+
+    // Sube el archivo final (.pdf/.docx) y marca el contrato como finalizado.
+    public function finalizar(int $id)
+    {
+        $contrato = $this->contratoModel->find($id);
+
+        if (! $contrato || ! in_array($contrato['estado'], ['borrador', 'en_correccion'], true)) {
+            return redirect()->to(site_url('contratos/' . $id))
+                ->with('error', 'Este contrato no se puede finalizar en su estado actual.');
+        }
+
+        $reglas = [
+            'archivo_final' => [
+                'label'  => 'Archivo final',
+                'rules'  => 'uploaded[archivo_final]|max_size[archivo_final,10240]|ext_in[archivo_final,pdf,docx]'
+                    . '|mime_in[archivo_final,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/zip]',
+                'errors' => [
+                    'uploaded' => 'Selecciona el archivo final del contrato.',
+                    'max_size' => 'El archivo no debe pesar más de 10 MB.',
+                    'ext_in'   => 'El archivo debe ser PDF o Word (.docx).',
+                    'mime_in'  => 'El archivo debe ser PDF o Word (.docx).',
+                ],
+            ],
+        ];
+
+        if (! $this->validate($reglas)) {
+            return redirect()->to(site_url('contratos/' . $id))
+                ->with('error', implode(' ', $this->validator->getErrors()));
+        }
+
+        $archivo = $this->request->getFile('archivo_final');
+        $nombre  = $archivo->getRandomName();
+        $archivo->move(WRITEPATH . self::CARPETA_FINALES, $nombre);
+
+        $anterior = $contrato['archivo_final'] ?? null;
+        if ($anterior && is_file(WRITEPATH . $anterior)) {
+            unlink(WRITEPATH . $anterior);
+        }
+
+        $this->contratoModel->update($id, [
+            'estado'             => 'finalizado',
+            'archivo_final'      => self::CARPETA_FINALES . '/' . $nombre,
+            'fecha_finalizacion' => date('Y-m-d H:i:s'),
+            'finalizado_por'     => session()->get('usuario_id'),
+        ]);
+
+        return redirect()->to(site_url('contratos/' . $id))
+            ->with('mensaje', 'Contrato finalizado.');
+    }
+
+    // Descarga el archivo final guardado.
+    public function archivoFinal(int $id)
+    {
+        $contrato = $this->contratoModel->find($id);
+        $ruta     = $contrato ? WRITEPATH . ($contrato['archivo_final'] ?? '') : '';
+
+        if (! $contrato || empty($contrato['archivo_final']) || ! is_file($ruta)) {
+            return redirect()->to(site_url('contratos/' . $id))
+                ->with('error', 'Este contrato no tiene archivo final.');
+        }
+
+        $extension = strtolower(pathinfo($ruta, PATHINFO_EXTENSION));
+
+        return $this->response->download($ruta, null)
+            ->setFileName(str_replace('/', '-', $contrato['folio']) . '-final.' . $extension);
+    }
+
+    // Solo administrador: regresa un contrato finalizado a "en corrección".
+    public function reabrir(int $id)
+    {
+        $contrato = $this->contratoModel->find($id);
+
+        if ((int) session()->get('rol_id') !== 1) {
+            return redirect()->to(site_url('contratos/' . $id))
+                ->with('error', 'Solo un administrador puede reabrir un contrato.');
+        }
+
+        if (! $contrato || $contrato['estado'] !== 'finalizado') {
+            return redirect()->to(site_url('contratos/' . $id))
+                ->with('error', 'Este contrato no está finalizado.');
+        }
+
+        $this->contratoModel->update($id, ['estado' => 'en_correccion', 'fecha_finalizacion' => null]);
+
+        return redirect()->to(site_url('contratos/' . $id))
+            ->with('mensaje', 'Contrato reabierto: quedó en corrección.');
     }
 
     // Folio: prefijo/fuente/siglas-consecutivo/año (máximo + 1).

@@ -47,7 +47,7 @@ class GeneradorPdfContrato
             'clave_fuente'            => $contrato['fuente_clave'] ?? '',
 
             'area_usuaria'        => $contrato['nombre_area'],
-            'area_tecnica'        => $contrato['nombre_area'],
+            'area_tecnica'        => $contrato['nombre_area_tecnica'] ?? $contrato['nombre_area'],
             'area_requirente'     => $contrato['nombre_area'],
         ];
     }
@@ -69,12 +69,17 @@ class GeneradorPdfContrato
         ];
     }
 
-    private function datosArea(array $area): array
+    private function datosArea(array $area, array $areaTecnica): array
     {
         return [
-            'titular_area'  => $area['titular_area'] ?? '',
-            'cargo_titular' => $area['cargo_titular'] ?? '',
-            'titular_areal' => $area['titular_area'] ?? ''
+            'titular_area'            => $area['titular_area'] ?? '',
+            'cargo_titular'           => $area['cargo_titular'] ?? '',
+            'titular_area_usuaria'    => $area['titular_area'] ?? '',
+            'cargo_area_usuaria'      => $area['cargo_titular'] ?? '',
+            'titular_area_requirente' => $area['titular_area'] ?? '',
+            'cargo_area_requirente'   => $area['cargo_titular'] ?? '',
+            'titular_area_tecnica'    => $areaTecnica['titular_area'] ?? '',
+            'cargo_area_tecnica'      => $areaTecnica['cargo_titular'] ?? '',
         ];
     }
 
@@ -84,7 +89,8 @@ class GeneradorPdfContrato
         array $area,
         array $valoresDinamicos,
         array $partidas,
-        string $rutaPlantilla
+        string $rutaPlantilla,
+        ?array $areaTecnica = null
     ): string {
 
         if (! defined('VENDORPATH'))
@@ -118,7 +124,7 @@ class GeneradorPdfContrato
         $valores = array_merge(
             $this->datosFijos($contrato),
             $this->datosProveedor($proveedor),
-            $this->datosArea($area)
+            $this->datosArea($area, $areaTecnica ?? $area)
         );
 
         //para los campos dinamicos

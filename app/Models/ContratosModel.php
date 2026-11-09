@@ -6,6 +6,14 @@ use CodeIgniter\Model;
 
 class ContratosModel extends Model
 {
+    // Etiqueta y color de insignia de cada estado.
+    public const ESTADOS = [
+        'borrador'      => ['Borrador', 'secondary'],
+        'en_correccion' => ['En corrección', 'warning'],
+        'finalizado'    => ['Finalizado', 'success'],
+        'cancelado'     => ['Cancelado', 'danger'],
+    ];
+
     protected $table            = 'contratos';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
@@ -19,10 +27,14 @@ class ContratosModel extends Model
         'fuente_financiamiento_id',
         'proveedor_id',
         'area_solicitante_id',
+        'area_tecnica_id',
         'descripcion_corta',
         'nombre_bien',
         'usuario_id',
         'estado',
+        'archivo_final',
+        'fecha_finalizacion',
+        'finalizado_por',
         'fecha_entrega',
         'lugar_entrega',
         'plazo_pago',
@@ -51,6 +63,7 @@ class ContratosModel extends Model
         'fuente_financiamiento_id'  => 'permit_empty|is_natural_no_zero',
         'proveedor_id'              => 'required|is_natural_no_zero',
         'area_solicitante_id'       => 'required|is_natural_no_zero',
+        'area_tecnica_id'           => 'permit_empty|is_natural_no_zero',
         'descripcion_corta'         => 'required|max_length[255]',
         'fecha_entrega'             => 'permit_empty',
         'lugar_entrega'             => 'permit_empty',
@@ -75,10 +88,11 @@ class ContratosModel extends Model
 
     public function listaConDetalle(): array
     {
-        return $this->select('contratos.*, tipos_contrato.nombre as tipo_nombre, proveedores.razon_social, areas.nombre_area, fuentes_financiamiento.nombre as fuente_nombre')
+        return $this->select('contratos.*, tipos_contrato.nombre as tipo_nombre, proveedores.razon_social, areas.nombre_area, tecnica.nombre_area as nombre_area_tecnica, fuentes_financiamiento.nombre as fuente_nombre')
             ->join('tipos_contrato', 'tipos_contrato.id = contratos.tipo_contrato_id')
             ->join('proveedores', 'proveedores.id = contratos.proveedor_id')
             ->join('areas', 'areas.id = contratos.area_solicitante_id')
+            ->join('areas tecnica', 'tecnica.id = contratos.area_tecnica_id', 'left')
             ->join('fuentes_financiamiento', 'fuentes_financiamiento.id = contratos.fuente_financiamiento_id', 'left')
             ->orderBy('contratos.id', 'DESC')
             ->findAll();
@@ -89,10 +103,11 @@ class ContratosModel extends Model
      */
     public function unoConDetalle(int $id): ?array
     {
-        return $this->select('contratos.*, tipos_contrato.nombre as tipo_nombre, tipos_contrato.siglas_procedimiento, proveedores.razon_social, areas.nombre_area, fuentes_financiamiento.nombre as fuente_nombre')
+        return $this->select('contratos.*, tipos_contrato.nombre as tipo_nombre, tipos_contrato.siglas_procedimiento, proveedores.razon_social, areas.nombre_area, tecnica.nombre_area as nombre_area_tecnica, fuentes_financiamiento.nombre as fuente_nombre')
             ->join('tipos_contrato', 'tipos_contrato.id = contratos.tipo_contrato_id')
             ->join('proveedores', 'proveedores.id = contratos.proveedor_id')
             ->join('areas', 'areas.id = contratos.area_solicitante_id')
+            ->join('areas tecnica', 'tecnica.id = contratos.area_tecnica_id', 'left')
             ->join('fuentes_financiamiento', 'fuentes_financiamiento.id = contratos.fuente_financiamiento_id', 'left')
             ->where('contratos.id', $id)
             ->first();

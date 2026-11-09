@@ -2,36 +2,100 @@
 
 <?= $this->section('content') ?>
 
+<?php
+$estados   = \App\Models\ContratosModel::ESTADOS;
+$estado    = $contrato['estado'];
+[$etiquetaEstado, $colorEstado] = $estados[$estado] ?? [$estado, 'secondary'];
+$esAdmin   = (int) session()->get('rol_id') === 1;
+$bloqueado = $estado === 'finalizado';
+?>
+
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
         <a href="<?= site_url('contratos') ?>" class="text-muted small"><i class="fas fa-arrow-left"></i> Contratos</a>
-        <h1 class="h3 mb-0 text-gray-800"><?= esc($contrato['folio']) ?></h1>
+        <h1 class="h3 mb-0 text-gray-800">
+            <?= esc($contrato['folio']) ?>
+            <span class="badge badge-<?= $colorEstado ?> align-middle" style="font-size: .5em;"><?= esc($etiquetaEstado) ?></span>
+        </h1>
     </div>
-    <div>
-        <!-- Un simple <a href>, no un <form>, porque descargar el -->
-        <!-- documento no cambia nada en la base de datos (es un GET de -->
-        <!-- solo lectura), a diferencia de "Eliminar" de abajo. Ya no se -->
-        <!-- exporta a PDF: se descarga el Word/Excel ya lleno, con sus -->
-        <!-- cuadros amarillos intactos, para revisarlo/corregirlo en -->
-        <!-- Office antes de guardarlo como PDF. -->
+    <div class="mt-2 mt-sm-0">
         <a href="<?= site_url('contratos/' . $contrato['id'] . '/documento') ?>" class="btn btn-success">
             <i class="fas fa-file-word"></i> Descargar documento
         </a>
-        <a href="<?= site_url('contratos/' . $contrato['id'] . '/editar') ?>" class="btn btn-primary">
-            <i class="fas fa-edit"></i> Editar
-        </a>
-        <!-- El botón de eliminar manda un POST (no un simple <a href>) porque -->
-        <!-- borrar un registro nunca debe poder hacerse con un GET: un GET se -->
-        <!-- puede disparar solo (un bot, un antivirus que "precarga" enlaces, -->
-        <!-- el usuario dando doble clic), y queremos que esto solo pase cuando -->
-        <!-- alguien de verdad confirma la acción. El "confirm()" de abajo es -->
-        <!-- además una segunda red de seguridad, para que no sea un clic -->
-        <!-- accidental. -->
-        <form method="POST" action="<?= site_url('contratos/' . $contrato['id'] . '/eliminar') ?>" class="d-inline"
-            data-confirmar="¿Eliminar el contrato <?= esc($contrato['folio'], 'attr') ?>? Esta acción no se puede deshacer desde la pantalla.">
-            <button type="submit" class="btn btn-danger">
-                <i class="fas fa-trash"></i> Eliminar
+
+        <?php if ($estado === 'borrador'): ?>
+            <form method="POST" action="<?= site_url('contratos/' . $contrato['id'] . '/correccion') ?>" class="d-inline">
+                <button type="submit" class="btn btn-warning">
+                    <i class="fas fa-pencil-alt"></i> Marcar en corrección
+                </button>
+            </form>
+        <?php endif; ?>
+
+        <?php if (in_array($estado, ['borrador', 'en_correccion'], true)): ?>
+            <button type="button" class="btn btn-info" data-toggle="modal" data-target="#modalFinalizar">
+                <i class="fas fa-check-circle"></i> Subir contrato final
             </button>
+        <?php endif; ?>
+
+        <?php if ($bloqueado): ?>
+            <?php if (! empty($contrato['archivo_final'])): ?>
+                <a href="<?= site_url('contratos/' . $contrato['id'] . '/archivo-final') ?>" class="btn btn-info">
+                    <i class="fas fa-file-download"></i> Contrato final
+                </a>
+            <?php endif; ?>
+            <?php if ($esAdmin): ?>
+                <form method="POST" action="<?= site_url('contratos/' . $contrato['id'] . '/reabrir') ?>" class="d-inline"
+                    data-confirmar="El contrato volverá a quedar en corrección y se podrá editar de nuevo."
+                    data-confirmar-titulo="¿Reabrir contrato?" data-confirmar-boton="Reabrir">
+                    <button type="submit" class="btn btn-outline-warning">
+                        <i class="fas fa-lock-open"></i> Reabrir
+                    </button>
+                </form>
+            <?php endif; ?>
+        <?php else: ?>
+            <a href="<?= site_url('contratos/' . $contrato['id'] . '/editar') ?>" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            <form method="POST" action="<?= site_url('contratos/' . $contrato['id'] . '/eliminar') ?>" class="d-inline"
+                data-confirmar="¿Eliminar el contrato <?= esc($contrato['folio'], 'attr') ?>? Esta acción no se puede deshacer desde la pantalla.">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
+            </form>
+        <?php endif; ?>
+    </div>
+</div>
+
+<?php if ($bloqueado): ?>
+    <div class="alert alert-success">
+        <i class="fas fa-lock"></i>
+        Contrato finalizado el <?= esc(substr((string) $contrato['fecha_finalizacion'], 0, 16)) ?>.
+        Ya no se puede editar ni eliminar.
+    </div>
+<?php endif; ?>
+
+<!-- Subir el archivo final para finalizar el contrato -->
+<div class="modal fade" id="modalFinalizar" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <form class="modal-content" method="POST" enctype="multipart/form-data"
+            action="<?= site_url('contratos/' . $contrato['id'] . '/finalizar') ?>">
+            <div class="modal-header">
+                <h5 class="modal-title">Subir contrato final</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">
+                    Sube el contrato ya corregido (PDF o Word, máximo 10 MB). Al guardarlo, el contrato
+                    pasa a <strong>Finalizado</strong> y deja de poder editarse.
+                </p>
+                <input type="file" name="archivo_final" class="form-control-file" accept=".pdf,.docx" required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Finalizar contrato</button>
+            </div>
         </form>
     </div>
 </div>
@@ -51,8 +115,12 @@
                 <?= esc($contrato['razon_social']) ?>
             </div>
             <div class="col-md-6 mb-3">
-                <strong>Área solicitante</strong><br>
+                <strong>Área usuaria / requirente</strong><br>
                 <?= esc($contrato['nombre_area']) ?>
+            </div>
+            <div class="col-md-6 mb-3">
+                <strong>Área técnica</strong><br>
+                <?= esc($contrato['nombre_area_tecnica'] ?? $contrato['nombre_area']) ?>
             </div>
             <div class="col-md-6 mb-3">
                 <strong>Descripción</strong><br>
