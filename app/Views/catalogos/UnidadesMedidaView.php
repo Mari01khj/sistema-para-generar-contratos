@@ -7,9 +7,7 @@
 </div>
 
 <p class="text-muted">
-    Se eligen de esta lista al capturar un bien/servicio, para que nadie las escriba
-    de varias formas distintas (ej. "PIEZA", "PZA", "PZ" como si fueran 3 unidades
-    diferentes).
+    Unidades de medida para los bienes y servicios. Se pueden agregar nuevas unidades, pero no se pueden eliminar si ya están en uso.
 </p>
 
 <!-- Agregar un  input + botón arriba -->

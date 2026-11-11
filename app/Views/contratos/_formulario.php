@@ -128,9 +128,6 @@ $textoBoton    ??= 'Guardar contrato';
                         </label>
 
                         <?php
-                            // old() gana siempre; si no hay old(), se usa el
-                            // valor ya guardado que venga en $valoresCampos
-                            // (editar.php lo manda, crear.php lo deja vacío).
                             $valorPrevio = old('campos.' . $campo['id']) ?? ($valoresCampos[$campo['id']] ?? '');
                         ?>
 
@@ -167,11 +164,7 @@ $textoBoton    ??= 'Guardar contrato';
         </div>
     <?php endif; ?>
 
-    <!-- Partidas: cada renglón es un bien/servicio del contrato (descripción detallada, -->
-    <!-- unidad de medida, cantidad, precio unitario). El importe de cada renglón y los -->
-    <!-- totales se recalculan aquí solo para que el usuario los vea; el servidor vuelve a -->
-    <!-- calcular todo antes de guardar, así que estos números en pantalla no son los que -->
-    <!-- deciden lo que se guarda. -->
+    <!-- aqui se hace el calculo que el usuario ve -->
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Partidas</h6>
@@ -323,7 +316,22 @@ $textoBoton    ??= 'Guardar contrato';
         + 'border-radius:4px;max-height:240px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.15);font-size:.9rem;';
     document.body.appendChild(caja);
 
-    function ocultarSugerencias() { caja.style.display = 'none'; }
+    var campoActivo = null;
+
+    function ocultarSugerencias() { caja.style.display = 'none'; campoActivo = null; }
+
+    // Coloca la lista debajo del campo o encima .
+    function posicionarSugerencias() {
+        if (!campoActivo) return;
+        var r = campoActivo.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > window.innerHeight) { ocultarSugerencias(); return; }
+
+        var alto = Math.min(caja.scrollHeight, 240);
+        var abajo = window.innerHeight - r.bottom;
+        caja.style.left = r.left + 'px';
+        caja.style.width = Math.max(r.width, 280) + 'px';
+        caja.style.top = (abajo < alto && r.top > abajo) ? (r.top - alto) + 'px' : r.bottom + 'px';
+    }
 
     function mostrarSugerencias(campo, items, alElegir) {
         caja.innerHTML = '';
@@ -345,15 +353,20 @@ $textoBoton    ??= 'Guardar contrato';
             caja.appendChild(opcion);
         });
 
-        var r = campo.getBoundingClientRect();
-        caja.style.left = r.left + 'px';
-        caja.style.top = r.bottom + 'px';
-        caja.style.width = Math.max(r.width, 280) + 'px';
+        campoActivo = campo;
+        caja.scrollTop = 0;
         caja.style.display = 'block';
+        posicionarSugerencias();
     }
 
-    window.addEventListener('scroll', ocultarSugerencias, true);
-    window.addEventListener('resize', ocultarSugerencias);
+    // El scroll de la propia lista no la cierra; el de la página la reubica.
+    window.addEventListener('scroll', function (e) {
+        if (e.target === caja || caja.contains(e.target)) return;
+        posicionarSugerencias();
+    }, true);
+    window.addEventListener('resize', posicionarSugerencias);
+    // Arrastrar la barra de la lista no debe quitar el foco del campo.
+    caja.addEventListener('mousedown', function (e) { e.preventDefault(); });
 
     // --- Unidades de Medida: se filtran en el navegador al escribir ---
     var nombresUnidades = [];
@@ -382,7 +395,7 @@ $textoBoton    ??= 'Guardar contrato';
     });
     cuerpo.addEventListener('focusout', function () { setTimeout(ocultarSugerencias, 150); });
 
-    // --- Bienes/Servicios: se buscan en el servidor al escribir en "Descripción" ---
+    // --- salen los biees y servicion es descripcion ---
     function prepararAutocompletarBien(fila) {
         var campoDescripcion = fila.querySelector('.campo-descripcion');
         if (!campoDescripcion) return;

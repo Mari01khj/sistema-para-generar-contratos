@@ -18,6 +18,37 @@
         </ul>
     </div>
 <?php endif; ?>
+<div class="card shadow-sm mb-3 border-left-primary">
+    <div class="card-body py-4 px-10 small">
+        <div class="d-flex align-items-center justify-content-between">
+            <span>
+                <i class="fas fa-info-circle text-primary"></i>
+                <span class="badge badge-primary">detalles sobre el folio de cada contratos</span>
+            </span>
+            <a href="#guiaFolio" data-toggle="collapse" class="small"> Ver concideraciones</a>
+        </div>
+
+        <div class="collapse" id="guiaFolio">
+            <div class="row mt-2">
+                <div class="col-md-7">
+                    <div><strong>ejemplo: MTM/CAYS/FAIS/LPNP-00#/2026</strong></div>
+                    <div><strong>MTM / CAYS:</strong> Prefijos de Municipio de Temascalcingo / Coordinación de Adquisiciones y Servicios.</div>
+                    <div><strong>FORTAMUN:</strong> fuente de financiamiento, se elige al crear el contrato.</div>
+                    <div><strong>CP-00#:</strong> siglas del procedimiento y consecutivo.</div>
+                    <div><strong>2026:</strong> año del contrato.</div>
+                </div>
+                <div class="col-md-5">
+                    <div> Siglas habituales de los procedimientos:</div>
+                    <div><strong>CP:</strong> Contratos Pedido</div>
+                    <div><strong>IRNP:</strong> Invitación Restringida Nacional Presencial</div>
+                    <div><strong>LPNP:</strong> Licitación Pública Nacional Presencial</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 
 <div class="card shadow mb-4">
     <div class="card-header py-3">
@@ -44,16 +75,13 @@
                             <tr>
                                 <td><?= esc($tipo['nombre']) ?></td>
                                 <td>
-                                    <!-- Son las dos piezas fijas del folio real para este tipo -->
-                                    <!-- (ej. "TEM/CAS" y "CP" en TEM/CAS/FORTAMUN/CP-002/2026). -->
-                                    <!-- El consecutivo y el año se calculan solos; la fuente de -->
-                                    <!-- financiamiento se elige al crear cada contrato. -->
+                                
                                     <form method="POST" action="<?= site_url('tipos-contrato/' . $tipo['id'] . '/folio') ?>" class="form-inline">
                                         <input type="text" name="prefijo_fijo" class="form-control form-control-sm mr-1 mb-1"
-                                            style="width: 100px;" placeholder="TEM/CAS"
+                                            style="width: 100px;" 
                                             value="<?= esc($tipo['prefijo_fijo'] ?? '') ?>">
                                         <input type="text" name="siglas_procedimiento" class="form-control form-control-sm mr-1 mb-1"
-                                            style="width: 70px; text-transform: uppercase;" placeholder="CP"
+                                            style="width: 70px; text-transform: uppercase;" 
                                             value="<?= esc($tipo['siglas_procedimiento'] ?? '') ?>">
                                         <button type="submit" class="btn btn-sm btn-outline-primary mb-1" title="Guardar">
                                             <i class="fas fa-save"></i>
@@ -67,9 +95,6 @@
                                         <span class="text-muted">— sin plantilla —</span>
                                     <?php endif; ?>
 
-                                    <!-- Reemplazar el archivo SIN borrar el tipo de contrato: el input -->
-                                    <!-- de archivo se manda solo (onchange) en cuanto se elige uno, no -->
-                                    <!-- hace falta un botón "Guardar" aparte para esto. -->
                                     <form method="POST" action="<?= site_url('tipos-contrato/' . $tipo['id'] . '/plantilla') ?>"
                                         enctype="multipart/form-data" class="mt-1">
                                         <input type="file" name="plantilla" accept=".docx,.doc,.xlsx,.xls"

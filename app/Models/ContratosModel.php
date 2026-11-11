@@ -86,9 +86,9 @@ class ContratosModel extends Model
     protected $afterDelete    = [];
 
 
-    public function listaConDetalle(): array
+     public function listaConDetalle(): array
     {
-        return $this->select('contratos.*, tipos_contrato.nombre as tipo_nombre, proveedores.razon_social, areas.nombre_area, tecnica.nombre_area as nombre_area_tecnica, fuentes_financiamiento.nombre as fuente_nombre')
+        return $this->select('contratos.*, tipos_contrato.nombre as tipo_nombre, proveedores.razon_social, areas.nombre_area, tecnica.nombre_area as nombre_area_tecnica, fuentes_financiamiento.nombre as fuente_nombre, fuentes_financiamiento.clave as fuente_clave')
             ->join('tipos_contrato', 'tipos_contrato.id = contratos.tipo_contrato_id')
             ->join('proveedores', 'proveedores.id = contratos.proveedor_id')
             ->join('areas', 'areas.id = contratos.area_solicitante_id')
@@ -101,9 +101,9 @@ class ContratosModel extends Model
     /**
      * Lo mismo que listaConDetalle pero con un solo contrato
      */
-    public function unoConDetalle(int $id): ?array
+     public function unoConDetalle(int $id): ?array
     {
-        return $this->select('contratos.*, tipos_contrato.nombre as tipo_nombre, tipos_contrato.siglas_procedimiento, proveedores.razon_social, areas.nombre_area, tecnica.nombre_area as nombre_area_tecnica, fuentes_financiamiento.nombre as fuente_nombre')
+        return $this->select('contratos.*, tipos_contrato.nombre as tipo_nombre, tipos_contrato.siglas_procedimiento, proveedores.razon_social, areas.nombre_area, tecnica.nombre_area as nombre_area_tecnica, fuentes_financiamiento.nombre as fuente_nombre, fuentes_financiamiento.clave as fuente_clave')
             ->join('tipos_contrato', 'tipos_contrato.id = contratos.tipo_contrato_id')
             ->join('proveedores', 'proveedores.id = contratos.proveedor_id')
             ->join('areas', 'areas.id = contratos.area_solicitante_id')

@@ -44,7 +44,7 @@ class GeneradorPdfContrato
 
             'nombre_proveedor'    => $contrato['razon_social'],
             'fuente_financiamiento' => $contrato['fuente_nombre'] ?? '',
-            'clave_fuente'            => $contrato['fuente_clave'] ?? '',
+            'clave_fuente'        => $contrato['fuente_clave'] ?? '',
 
             'area_usuaria'        => $contrato['nombre_area'],
             'area_tecnica'        => $contrato['nombre_area_tecnica'] ?? $contrato['nombre_area'],
