@@ -27,6 +27,7 @@ $textoBoton    ??= 'Guardar contrato';
                         <?php endforeach; ?>
                     </select>
                 </div>
+                
                 <div class="form-group col-md-6">
                     <label>Área usuaria / requirente <span class="text-danger">*</span></label>
                     <?php $areaPrevia = old('area_solicitante_id') ?? ($valoresFijos['area_solicitante_id'] ?? null); ?>

@@ -37,10 +37,7 @@ class BienesServiciosController extends BaseController
     }
 
     /**
-     * Para la tabla de la pantalla de consulta: por página, con filtro de
-     * texto y/o categoría. Con 3,039 filas, mandarlas todas de un jalón al
-     * navegador (como sí hacen los demás catálogos, mucho más chicos) lo
-     * haría sentir lento, por eso aquí SÍ se pagina en el servidor.
+   *tabla con los bienes
      */
     public function listar()
     {
@@ -77,9 +74,7 @@ class BienesServiciosController extends BaseController
     }
 
     /**
-     * Autocompletar al capturar una partida de un contrato: unos cuantos
-     * resultados (no todo el catálogo) que coincidan con lo que el
-     * operador ya escribió.
+     * Autocompletar conforme con lo que escribe el usuario
      */
     public function buscar()
     {

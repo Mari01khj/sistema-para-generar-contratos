@@ -41,8 +41,7 @@ class BienesServiciosSeeder extends Seeder
                 'created_at'           => $ahora,
             ];
 
-            // insertBatch() en lotes de 500: mandar las 3,039 de un jalón
-            // en un solo INSERT es innecesariamente pesado para el motor.
+            // insertBatch() en lotes de 500
             if (count($lote) >= 500) {
                 $this->db->table('bienes_servicios')->insertBatch($lote);
                 $lote = [];
